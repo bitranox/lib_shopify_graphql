@@ -20,7 +20,7 @@ from ..adapters.parsers import (
 )
 from ..exceptions import GraphQLError, SessionNotActiveError, VariantNotFoundError
 from ..models import BulkUpdateResult, UpdateFailure, UpdateSuccess, VariantUpdateRequest
-from ..models._operations import UserErrorData, VariantsBulkUpdateResponse
+from ..models._operations import UserErrorData, VariantMutationResult, VariantsBulkUpdateResponse
 from ._common import _get_session_sku_resolver, _normalize_product_gid, _normalize_variant_gid, _resolve_variant_identifier
 from ._session import ShopifySession
 
@@ -117,13 +117,13 @@ def _process_mutation_user_errors(
 
 
 def _process_mutation_successes(
-    variants_data: list[dict[str, Any]],
+    variants_data: list[VariantMutationResult],
     identifier_map: dict[str, str],
 ) -> list[UpdateSuccess]:
     """Process successful updates from mutation response.
 
     Args:
-        variants_data: Variant data from GraphQL response.
+        variants_data: Typed variant data from GraphQL response.
         identifier_map: Map of variant GID to original identifier.
 
     Returns:
@@ -132,7 +132,7 @@ def _process_mutation_successes(
     succeeded: list[UpdateSuccess] = []
 
     for variant_data in variants_data:
-        variant_gid: str = str(variant_data.get("id", ""))
+        variant_gid = variant_data.id
         identifier = identifier_map.get(variant_gid, variant_gid)
         variant = parse_variant_from_mutation(variant_data)
         succeeded.append(UpdateSuccess(identifier=str(identifier), variant=variant))

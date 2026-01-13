@@ -29,7 +29,7 @@ Note:
 from __future__ import annotations
 
 from .cache_json import JsonFileCacheAdapter
-from .cache_mysql import MySQLCacheAdapter, PYMYSQL_AVAILABLE
+from .cache_mysql import PYMYSQL_AVAILABLE, MySQLCacheAdapter
 from .constants import (
     DEFAULT_GRAPHQL_TIMEOUT_SECONDS,
     get_default_cache_dir,

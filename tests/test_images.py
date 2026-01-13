@@ -29,6 +29,7 @@ from lib_shopify_graphql import (
     SessionNotActiveError,
     StagedUploadTarget,
 )
+from lib_shopify_graphql.models._images import StagedUploadParameter
 from lib_shopify_graphql.adapters.parsers import (
     parse_media_from_mutation,
     parse_media_user_errors,
@@ -149,12 +150,15 @@ class TestImageResultModels:
         target = StagedUploadTarget(
             url="https://shopify.com/upload",
             resource_url="https://cdn.shopify.com/resource.jpg",
-            parameters={"key": "value"},
+            parameters=[StagedUploadParameter(name="key", value="value")],
         )
 
         assert target.url == "https://shopify.com/upload"
         assert target.resource_url == "https://cdn.shopify.com/resource.jpg"
-        assert target.parameters == {"key": "value"}
+        assert len(target.parameters) == 1
+        assert target.parameters[0].name == "key"
+        assert target.parameters[0].value == "value"
+        assert target.get_parameters_dict() == {"key": "value"}
 
     def test_image_create_success_stores_data(self) -> None:
         """ImageCreateSuccess stores creation result."""
@@ -253,9 +257,9 @@ class TestMediaParsers:
 
         result = parse_staged_upload_target(data)
 
-        assert result["url"] == "https://upload.shopify.com/staged"
-        assert result["resource_url"] == "https://cdn.shopify.com/resource.jpg"
-        assert result["parameters"] == {"key": "abc123", "policy": "xyz"}
+        assert result.url == "https://upload.shopify.com/staged"
+        assert result.resource_url == "https://cdn.shopify.com/resource.jpg"
+        assert result.get_parameters_dict() == {"key": "abc123", "policy": "xyz"}
 
     def test_parse_staged_upload_target_empty_parameters(self) -> None:
         """parse_staged_upload_target handles empty parameters."""
@@ -267,7 +271,7 @@ class TestMediaParsers:
 
         result = parse_staged_upload_target(data)  # type: ignore[arg-type]
 
-        assert result["parameters"] == {}
+        assert result.get_parameters_dict() == {}
 
     def test_parse_media_from_mutation(self) -> None:
         """parse_media_from_mutation extracts media data."""

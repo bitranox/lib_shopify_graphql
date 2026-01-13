@@ -13,7 +13,10 @@ import logging
 from datetime import datetime
 from decimal import Decimal
 from functools import lru_cache
-from typing import Any
+from typing import TYPE_CHECKING, Any
+
+if TYPE_CHECKING:
+    from ..models._operations import TruncationInfo
 
 from ..exceptions import GraphQLErrorEntry, GraphQLErrorLocation
 from ..models import (
@@ -39,10 +42,12 @@ from ..models import (
     ProductUpdate,
     ProductVariant,
     SelectedOption,
+    StagedUploadTarget,
     UpdateFailure,
     VariantUpdate,
     WeightUnit,
 )
+from ..models._operations import VariantMutationResult
 
 logger = logging.getLogger(__name__)
 
@@ -259,7 +264,7 @@ def _check_truncation(
             )
 
 
-def get_truncation_info(product_data: dict[str, Any]) -> dict[str, Any]:
+def get_truncation_info(product_data: dict[str, Any]) -> TruncationInfo:
     """Analyze raw product data for truncation and return structured info.
 
     Uses pageInfo.hasNextPage to definitively detect truncation.
@@ -269,20 +274,9 @@ def get_truncation_info(product_data: dict[str, Any]) -> dict[str, Any]:
         product_data: Raw product data from GraphQL response.
 
     Returns:
-        Dict with truncation analysis:
-        {
-            "product_id": str,
-            "product_title": str,
-            "truncated": bool,  # True if any field was truncated
-            "fields": {
-                "images": {"count": int, "truncated": bool},
-                "media": {"count": int, "truncated": bool},
-                "metafields": {"count": int, "truncated": bool},
-                "variants": {"count": int, "truncated": bool},
-                "variant_metafields": {"count": int, "truncated": bool},
-            }
-        }
+        TruncationInfo with product details and per-field truncation status.
     """
+    from ..models._operations import FieldTruncationInfo, TruncationFields, TruncationInfo
     from .queries import get_limits_from_config
 
     limits = get_limits_from_config()
@@ -312,50 +306,52 @@ def get_truncation_info(product_data: dict[str, Any]) -> dict[str, Any]:
 
     any_truncated = images_truncated or media_truncated or metafields_truncated or variants_truncated or variant_metafields_truncated
 
-    return {
-        "product_id": product_id,
-        "product_title": title,
-        "truncated": any_truncated,
-        "fields": {
-            "images": {
-                "count": len(images_data.get("nodes", [])),
-                "limit": limits.product_max_images,
-                "truncated": images_truncated,
-                "config_key": "product_max_images",
-                "env_var": "GRAPHQL__PRODUCT_MAX_IMAGES",
-            },
-            "media": {
-                "count": len(media_data.get("nodes", [])),
-                "limit": limits.product_max_media,
-                "truncated": media_truncated,
-                "config_key": "product_max_media",
-                "env_var": "GRAPHQL__PRODUCT_MAX_MEDIA",
-            },
-            "metafields": {
-                "count": len(metafields_data.get("nodes", [])),
-                "limit": limits.product_max_metafields,
-                "truncated": metafields_truncated,
-                "config_key": "product_max_metafields",
-                "env_var": "GRAPHQL__PRODUCT_MAX_METAFIELDS",
-            },
-            "variants": {
-                "count": len(variants),
-                "limit": limits.product_max_variants,
-                "truncated": variants_truncated,
-                "config_key": "product_max_variants",
-                "env_var": "GRAPHQL__PRODUCT_MAX_VARIANTS",
-                "cost_warning": "High values increase query cost significantly!",
-            },
-            "variant_metafields": {
-                "count": variant_metafields_count,
-                "limit": limits.product_max_variant_metafields,
-                "truncated": variant_metafields_truncated,
-                "config_key": "product_max_variant_metafields",
-                "env_var": "GRAPHQL__PRODUCT_MAX_VARIANT_METAFIELDS",
-                "cost_warning": "Cost = product_max_variants × product_max_variant_metafields!",
-            },
-        },
-    }
+    fields = TruncationFields(
+        images=FieldTruncationInfo(
+            count=len(images_data.get("nodes", [])),
+            limit=limits.product_max_images,
+            truncated=images_truncated,
+            config_key="product_max_images",
+            env_var="GRAPHQL__PRODUCT_MAX_IMAGES",
+        ),
+        media=FieldTruncationInfo(
+            count=len(media_data.get("nodes", [])),
+            limit=limits.product_max_media,
+            truncated=media_truncated,
+            config_key="product_max_media",
+            env_var="GRAPHQL__PRODUCT_MAX_MEDIA",
+        ),
+        metafields=FieldTruncationInfo(
+            count=len(metafields_data.get("nodes", [])),
+            limit=limits.product_max_metafields,
+            truncated=metafields_truncated,
+            config_key="product_max_metafields",
+            env_var="GRAPHQL__PRODUCT_MAX_METAFIELDS",
+        ),
+        variants=FieldTruncationInfo(
+            count=len(variants),
+            limit=limits.product_max_variants,
+            truncated=variants_truncated,
+            config_key="product_max_variants",
+            env_var="GRAPHQL__PRODUCT_MAX_VARIANTS",
+            cost_warning="High values increase query cost significantly!",
+        ),
+        variant_metafields=FieldTruncationInfo(
+            count=variant_metafields_count,
+            limit=limits.product_max_variant_metafields,
+            truncated=variant_metafields_truncated,
+            config_key="product_max_variant_metafields",
+            env_var="GRAPHQL__PRODUCT_MAX_VARIANT_METAFIELDS",
+            cost_warning="Cost = product_max_variants × product_max_variant_metafields!",
+        ),
+    )
+
+    return TruncationInfo(
+        product_id=product_id,
+        product_title=title,
+        truncated=any_truncated,
+        fields=fields,
+    )
 
 
 def _parse_graphql_error_location(loc_data: dict[str, Any]) -> GraphQLErrorLocation:
@@ -973,33 +969,34 @@ def parse_user_errors(user_errors: list[dict[str, Any]]) -> list[UpdateFailure]:
     return failures
 
 
-def parse_variant_from_mutation(variant_data: dict[str, Any]) -> ProductVariant:
+def parse_variant_from_mutation(variant_data: VariantMutationResult) -> ProductVariant:
     """Parse variant data from mutation response.
 
     Mutation responses have slightly different structure than query responses.
 
     Args:
-        variant_data: Variant data from productVariantsBulkUpdate response.
+        variant_data: Typed variant data from productVariantsBulkUpdate response.
 
     Returns:
         ProductVariant model.
     """
-    # Get price as string and convert to Money
-    price_str = variant_data.get("price", "0")
-    compare_at_str = variant_data.get("compareAtPrice")
-    currency_code = CurrencyCode.USD  # Mutation responses don't include currency, default to USD
+    # Mutation responses don't include currency, default to USD
+    currency_code = CurrencyCode.USD
+
+    # Convert selected options from mutation format to domain format
+    selected_options = [SelectedOption(name=opt.name, value=opt.value) for opt in variant_data.selected_options]
 
     return ProductVariant(
-        id=variant_data["id"],
-        title=variant_data.get("title", ""),
-        sku=variant_data.get("sku"),
-        barcode=variant_data.get("barcode"),
-        price=Money(amount=Decimal(price_str), currency_code=currency_code),
-        compare_at_price=parse_money(compare_at_str, currency_code) if compare_at_str else None,
-        inventory_policy=parse_inventory_policy(variant_data.get("inventoryPolicy")),
-        taxable=variant_data.get("taxable", True),
-        weight=Decimal(str(variant_data["weight"])) if variant_data.get("weight") else None,
-        selected_options=parse_selected_options(variant_data.get("selectedOptions")),
+        id=variant_data.id,
+        title=variant_data.title,
+        sku=variant_data.sku,
+        barcode=variant_data.barcode,
+        price=Money(amount=Decimal(variant_data.price), currency_code=currency_code),
+        compare_at_price=parse_money(variant_data.compare_at_price, currency_code) if variant_data.compare_at_price else None,
+        inventory_policy=parse_inventory_policy(variant_data.inventory_policy),
+        taxable=variant_data.taxable,
+        weight=None,  # Weight is not returned by the mutation
+        selected_options=selected_options,
     )
 
 
@@ -1025,21 +1022,23 @@ def parse_inventory_level(data: dict[str, Any]) -> InventoryLevel:
 # =============================================================================
 
 
-def parse_staged_upload_target(data: dict[str, Any]) -> dict[str, Any]:
+def parse_staged_upload_target(data: dict[str, Any]) -> StagedUploadTarget:
     """Parse staged upload target from GraphQL response.
 
     Args:
         data: Staged target data from stagedUploadsCreate response.
 
     Returns:
-        Dictionary with url, resource_url, and parameters.
+        StagedUploadTarget with url, resource_url, and parameters.
     """
-    params = {p["name"]: p["value"] for p in data.get("parameters", [])}
-    return {
-        "url": data["url"],
-        "resource_url": data["resourceUrl"],
-        "parameters": params,
-    }
+    from ..models._images import StagedUploadParameter, StagedUploadTarget
+
+    params = [StagedUploadParameter(name=p["name"], value=p["value"]) for p in data.get("parameters", [])]
+    return StagedUploadTarget(
+        url=data["url"],
+        resource_url=data["resourceUrl"],
+        parameters=params,
+    )
 
 
 def parse_media_from_mutation(media_data: dict[str, Any]) -> dict[str, Any]:

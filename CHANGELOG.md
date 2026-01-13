@@ -4,6 +4,32 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [2.0.0] - 2026-01-13
+
+### Changed
+- **Data Architecture Enforcement** - Replaced `dict[str, Any]` with typed Pydantic models throughout:
+  - `GraphQLErrorLocation` - Typed model for error locations
+  - `GraphQLErrorExtensions` - Typed model for error metadata with `extra="allow"`
+  - `VariantMutationResult` - Typed variant mutation response
+  - `VariantsBulkUpdateResponse` - Typed bulk update response wrapper
+  - `TruncationInfo`, `TruncationFields`, `FieldTruncationInfo` - Truncation analysis models
+  - `StagedUploadParameter` - Typed staged upload parameters
+  - `_AdaptersCache` TypedDict for type-safe adapter storage
+
+- **Consolidated StrEnum compatibility** to single `_compat.py` module for Python 3.10 support
+
+- **Updated parsers to return typed models**:
+  - `parse_variant_from_mutation()` accepts `VariantMutationResult` model
+  - `parse_staged_upload_target()` returns `StagedUploadTarget` model
+  - `get_truncation_info()` returns `TruncationInfo` model
+
+- **StagedUploadTarget.parameters** changed from `dict[str, str]` to `list[StagedUploadParameter]`
+  - Added `get_parameters_dict()` method for boundary conversion
+
+### Removed
+- Removed `cast()` calls in adapter cache - TypedDict provides proper typing
+- Removed duplicate StrEnum compatibility shims (consolidated to `_compat.py`)
+
 ## [Unreleased]
 
 ### Added

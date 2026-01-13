@@ -19,8 +19,21 @@ Note:
 
 from __future__ import annotations
 
-# Internal utilities (Updatable is used internally but not exported in __all__)
-from ._internal import UNSET, UnsetType, Updatable as Updatable  # noqa: F401
+# Core entity models
+from ._entities import (
+    SEO,
+    Metafield,
+    Money,
+    PriceRange,
+    Product,
+    ProductImage,
+    ProductMedia,
+    ProductOption,
+    ProductVariant,
+    SelectedOption,
+    ShopifyCredentials,
+    ShopifySessionInfo,
+)
 
 # Enums
 from ._enums import (
@@ -35,21 +48,21 @@ from ._enums import (
     WeightUnit,
 )
 
-# Core entity models
-from ._entities import (
-    Metafield,
-    Money,
-    PriceRange,
-    Product,
-    ProductImage,
-    ProductMedia,
-    ProductOption,
-    ProductVariant,
-    SEO,
-    SelectedOption,
-    ShopifyCredentials,
-    ShopifySessionInfo,
+# Image management models
+from ._images import (
+    ImageCreateFailure,
+    ImageCreateResult,
+    ImageCreateSuccess,
+    ImageDeleteResult,
+    ImageReorderResult,
+    ImageSource,
+    ImageUpdate,
+    StagedUploadTarget,
 )
+
+# Internal utilities (Updatable is used internally but not exported in __all__)
+from ._internal import UNSET, UnsetType  # noqa: F401
+from ._internal import Updatable as Updatable
 
 # Mutation/update models
 from ._mutations import (
@@ -74,18 +87,6 @@ from ._operations import (
     UpdateFailure,
     UpdateSuccess,
     VariantUpdateRequest,
-)
-
-# Image management models
-from ._images import (
-    ImageCreateFailure,
-    ImageCreateResult,
-    ImageCreateSuccess,
-    ImageDeleteResult,
-    ImageReorderResult,
-    ImageSource,
-    ImageUpdate,
-    StagedUploadTarget,
 )
 
 __all__ = [

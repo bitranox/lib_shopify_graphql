@@ -26,8 +26,11 @@ import rich_click as click
 from .. import __init__conf__
 from ..adapters import PYMYSQL_AVAILABLE
 from ..config import get_config
-from ..logging_setup import init_logging
 from ..enums import OutputFormat
+from ..logging_setup import init_logging
+
+# Import login/logout so tests can patch them on the cli module
+from ..shopify_client import login, logout
 from ._cache import (
     create_mysql_cache_adapter,
     create_sku_cache_from_config,
@@ -71,12 +74,9 @@ from ._products import (
 )
 from ._test_limits import register_test_limits_command
 
-# Import login/logout so tests can patch them on the cli module
-from ..shopify_client import login, logout
-
 logger = logging.getLogger(__name__)
 
-# Backwards compatibility aliases for tests (original cli.py used underscore prefix)
+# Internal function aliases for test access
 _extract_shopify_credentials_from_config = extract_shopify_credentials_from_config
 _get_fix_suggestion = get_fix_suggestion
 _create_mysql_cache_adapter = create_mysql_cache_adapter
@@ -199,7 +199,7 @@ __all__ = [
     "CLICK_CONTEXT_SETTINGS",
     "TRACEBACK_SUMMARY_LIMIT",
     "TRACEBACK_VERBOSE_LIMIT",
-    # Re-exported for backwards compatibility
+    # Re-exported types and utilities
     "CliContext",
     "EnumChoice",
     "HealthCheckResult",

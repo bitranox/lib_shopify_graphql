@@ -93,6 +93,35 @@ from __future__ import annotations
 # Package metadata
 from .__init__conf__ import print_info
 
+# Adapters
+from .adapters import (
+    DEFAULT_GRAPHQL_TIMEOUT_SECONDS,
+    PYMYSQL_AVAILABLE,
+    CachedSKUResolver,
+    CachedTokenProvider,
+    JsonFileCacheAdapter,
+    LocationResolver,
+    MySQLCacheAdapter,
+)
+
+# Application ports (for dependency injection)
+from .application.ports import (
+    CachePort,
+    GraphQLClientPort,
+    LocationResolverPort,
+    SessionManagerPort,
+    SKUResolverPort,
+    TokenProviderPort,
+)
+
+# Composition root
+from .composition import (
+    AdapterBundle,
+    create_adapters,
+    create_cached_token_provider,
+    get_default_adapters,
+)
+
 # Configuration
 from .config import get_config
 
@@ -194,35 +223,6 @@ from .shopify_client import (
     update_product,
     update_variant,
     update_variants_bulk,
-)
-
-# Application ports (for dependency injection)
-from .application.ports import (
-    CachePort,
-    GraphQLClientPort,
-    LocationResolverPort,
-    SessionManagerPort,
-    SKUResolverPort,
-    TokenProviderPort,
-)
-
-# Adapters
-from .adapters import (
-    CachedSKUResolver,
-    CachedTokenProvider,
-    DEFAULT_GRAPHQL_TIMEOUT_SECONDS,
-    JsonFileCacheAdapter,
-    LocationResolver,
-    MySQLCacheAdapter,
-    PYMYSQL_AVAILABLE,
-)
-
-# Composition root
-from .composition import (
-    AdapterBundle,
-    create_adapters,
-    create_cached_token_provider,
-    get_default_adapters,
 )
 
 __all__ = [

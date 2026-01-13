@@ -25,6 +25,7 @@ from typing import Any
 import pytest
 
 from lib_shopify_graphql.adapters.parsers import (
+    VariantMutationResult,
     build_product_input,
     build_variant_input,
     parse_datetime,
@@ -530,14 +531,14 @@ class TestParseVariantFromMutation:
 
     def test_parses_mutation_response(self) -> None:
         """Mutation response variant is parsed correctly."""
-        data = {
-            "id": "gid://shopify/ProductVariant/123",
-            "title": "Small",
-            "sku": "SKU-001",
-            "price": "29.99",
-            "inventoryPolicy": "DENY",
-            "taxable": True,
-        }
+        data = VariantMutationResult(
+            id="gid://shopify/ProductVariant/123",
+            title="Small",
+            sku="SKU-001",
+            price="29.99",
+            inventoryPolicy="DENY",  # Use alias name for pyright compatibility
+            taxable=True,
+        )
 
         result = parse_variant_from_mutation(data)
 
@@ -545,17 +546,17 @@ class TestParseVariantFromMutation:
         assert result.sku == "SKU-001"
         assert result.price.amount == Decimal("29.99")
 
-    def test_handles_weight(self) -> None:
-        """Weight field is parsed as Decimal."""
-        data = {
-            "id": "gid://variant/1",
-            "price": "10.00",
-            "weight": 1.5,
-        }
+    def test_weight_not_returned_by_mutation(self) -> None:
+        """Weight is not returned by mutation, always None."""
+        data = VariantMutationResult(
+            id="gid://variant/1",
+            price="10.00",
+        )
 
         result = parse_variant_from_mutation(data)
 
-        assert result.weight == Decimal("1.5")
+        # Mutation responses don't include weight, so it's always None
+        assert result.weight is None
 
 
 # =============================================================================
@@ -894,9 +895,9 @@ class TestGetTruncationInfo:
 
         result = get_truncation_info(product_data)
 
-        assert result["truncated"] is False
-        assert result["product_id"] == "gid://shopify/Product/123"
-        assert result["product_title"] == "Test Product"
+        assert result.truncated is False
+        assert result.product_id == "gid://shopify/Product/123"
+        assert result.product_title == "Test Product"
 
     def test_detects_images_truncated(self) -> None:
         """Detects when images are truncated."""
@@ -913,9 +914,9 @@ class TestGetTruncationInfo:
 
         result = get_truncation_info(product_data)
 
-        assert result["truncated"] is True
-        assert result["fields"]["images"]["truncated"] is True
-        assert result["fields"]["images"]["count"] == 1
+        assert result.truncated is True
+        assert result.fields.images.truncated is True
+        assert result.fields.images.count == 1
 
     def test_detects_metafields_truncated(self) -> None:
         """Detects when metafields are truncated."""
@@ -935,9 +936,9 @@ class TestGetTruncationInfo:
 
         result = get_truncation_info(product_data)
 
-        assert result["truncated"] is True
-        assert result["fields"]["metafields"]["truncated"] is True
-        assert result["fields"]["metafields"]["count"] == 2
+        assert result.truncated is True
+        assert result.fields.metafields.truncated is True
+        assert result.fields.metafields.count == 2
 
     def test_detects_variants_truncated(self) -> None:
         """Detects when variants are truncated."""
@@ -957,9 +958,9 @@ class TestGetTruncationInfo:
 
         result = get_truncation_info(product_data)
 
-        assert result["truncated"] is True
-        assert result["fields"]["variants"]["truncated"] is True
-        assert result["fields"]["variants"]["count"] == 1
+        assert result.truncated is True
+        assert result.fields.variants.truncated is True
+        assert result.fields.variants.count == 1
 
     def test_detects_variant_metafields_truncated(self) -> None:
         """Detects when variant metafields are truncated."""
@@ -987,9 +988,9 @@ class TestGetTruncationInfo:
 
         result = get_truncation_info(product_data)
 
-        assert result["truncated"] is True
-        assert result["fields"]["variant_metafields"]["truncated"] is True
-        assert result["fields"]["variant_metafields"]["count"] == 1
+        assert result.truncated is True
+        assert result.fields.variant_metafields.truncated is True
+        assert result.fields.variant_metafields.count == 1
 
     def test_includes_config_keys(self) -> None:
         """Includes config_key and env_var for each field."""
@@ -1006,10 +1007,10 @@ class TestGetTruncationInfo:
 
         result = get_truncation_info(product_data)
 
-        assert result["fields"]["images"]["config_key"] == "product_max_images"
-        assert result["fields"]["images"]["env_var"] == "GRAPHQL__PRODUCT_MAX_IMAGES"
-        assert result["fields"]["metafields"]["config_key"] == "product_max_metafields"
-        assert result["fields"]["variants"]["config_key"] == "product_max_variants"
+        assert result.fields.images.config_key == "product_max_images"
+        assert result.fields.images.env_var == "GRAPHQL__PRODUCT_MAX_IMAGES"
+        assert result.fields.metafields.config_key == "product_max_metafields"
+        assert result.fields.variants.config_key == "product_max_variants"
 
 
 # =============================================================================

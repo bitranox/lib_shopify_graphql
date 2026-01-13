@@ -102,8 +102,32 @@ class VariantUpdate(BaseModel):
     harmonized_system_code: Updatable[str] = UNSET
     country_code_of_origin: Updatable[str] = UNSET
 
+    def is_field_set(self, field_name: str) -> bool:
+        """Check if a field has been set (is not UNSET).
+
+        Args:
+            field_name: Name of the field to check.
+
+        Returns:
+            True if the field has a value (not UNSET).
+        """
+        return getattr(self, field_name, UNSET) is not UNSET
+
+    def get_field_value(self, field_name: str) -> object:
+        """Get the value of a field.
+
+        Args:
+            field_name: Name of the field to get.
+
+        Returns:
+            The field value, or UNSET if not set.
+        """
+        return getattr(self, field_name, UNSET)
+
     def get_set_fields(self) -> dict[str, object]:
         """Return only fields that are not UNSET.
+
+        Note: This method is for adapter boundary conversion to GraphQL input.
 
         Returns:
             Dictionary of field names to values for fields that should be updated.
@@ -178,8 +202,32 @@ class ProductUpdate(BaseModel):
     # Subscription
     requires_selling_plan: Updatable[bool] = UNSET
 
+    def is_field_set(self, field_name: str) -> bool:
+        """Check if a field has been set (is not UNSET).
+
+        Args:
+            field_name: Name of the field to check.
+
+        Returns:
+            True if the field has a value (not UNSET).
+        """
+        return getattr(self, field_name, UNSET) is not UNSET
+
+    def get_field_value(self, field_name: str) -> object:
+        """Get the value of a field.
+
+        Args:
+            field_name: Name of the field to get.
+
+        Returns:
+            The field value, or UNSET if not set.
+        """
+        return getattr(self, field_name, UNSET)
+
     def get_set_fields(self) -> dict[str, object]:
         """Return only fields that are not UNSET.
+
+        Note: This method is for adapter boundary conversion to GraphQL input.
 
         Returns:
             Dictionary of field names to values for fields that should be updated.

@@ -31,8 +31,8 @@ from typing import TYPE_CHECKING, Any
 
 from pydantic import BaseModel, ConfigDict
 
-from .constants import DEFAULT_SKU_CACHE_TTL_SECONDS
 from ..exceptions import AmbiguousSKUError
+from .constants import DEFAULT_SKU_CACHE_TTL_SECONDS
 
 if TYPE_CHECKING:
     from ..application.ports import CachePort, GraphQLClientPort

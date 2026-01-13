@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import threading
 from functools import lru_cache
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, TypedDict
 
 if TYPE_CHECKING:
     from ..application.ports import (
@@ -28,22 +28,28 @@ logger = logging.getLogger(__name__)
 _GID_CACHE_SIZE = 2048
 _MEDIA_GID_CACHE_SIZE = 512
 
+
+class _AdaptersCache(TypedDict):
+    """Type-safe cache for default adapters."""
+
+    token_provider: TokenProviderPort
+    session_manager: SessionManagerPort
+    graphql_client: GraphQLClientPort
+
+
 # Default adapters are lazily loaded from composition.py.
 # This avoids coupling this module to concrete adapter implementations.
-_default_adapters_cache: dict[str, Any] | None = None
+_default_adapters_cache: _AdaptersCache | None = None
 _default_adapters_lock = threading.Lock()
 
 
-def _get_default_adapter(name: str) -> TokenProviderPort | SessionManagerPort | GraphQLClientPort:
-    """Get a default adapter by name, lazily loading from composition root.
+def _ensure_adapters_cache() -> _AdaptersCache:
+    """Ensure the adapters cache is initialized and return it.
 
     Uses double-checked locking for thread-safe lazy initialization.
 
-    Args:
-        name: Adapter name ('token_provider', 'session_manager', 'graphql_client').
-
     Returns:
-        The requested adapter instance.
+        The initialized adapters cache.
     """
     global _default_adapters_cache
     if _default_adapters_cache is None:
@@ -59,22 +65,22 @@ def _get_default_adapter(name: str) -> TokenProviderPort | SessionManagerPort | 
                     "session_manager": bundle["session_manager"],
                     "graphql_client": bundle["graphql_client"],
                 }
-    return _default_adapters_cache[name]
+    return _default_adapters_cache
 
 
 def _get_default_token_provider() -> TokenProviderPort:
     """Get the default token provider with proper type."""
-    return cast("TokenProviderPort", _get_default_adapter("token_provider"))
+    return _ensure_adapters_cache()["token_provider"]
 
 
 def _get_default_session_manager() -> SessionManagerPort:
     """Get the default session manager with proper type."""
-    return cast("SessionManagerPort", _get_default_adapter("session_manager"))
+    return _ensure_adapters_cache()["session_manager"]
 
 
 def _get_default_graphql_client() -> GraphQLClientPort:
     """Get the default GraphQL client with proper type."""
-    return cast("GraphQLClientPort", _get_default_adapter("graphql_client"))
+    return _ensure_adapters_cache()["graphql_client"]
 
 
 @lru_cache(maxsize=_GID_CACHE_SIZE)
@@ -187,7 +193,7 @@ def _get_session_sku_resolver(
 
 
 __all__ = [
-    "_get_default_adapter",
+    "_ensure_adapters_cache",
     "_get_default_graphql_client",
     "_get_default_session_manager",
     "_get_default_token_provider",

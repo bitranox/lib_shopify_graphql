@@ -16,6 +16,7 @@ for interacting with the Shopify GraphQL Admin API using Clean Architecture prin
 **Pull Requests:** N/A
 **Related Files:**
 
+* src/lib_shopify_graphql/_compat.py
 * src/lib_shopify_graphql/domain/__init__.py
 * src/lib_shopify_graphql/application/__init__.py
 * src/lib_shopify_graphql/application/ports.py
@@ -142,6 +143,18 @@ The library implements **Clean Architecture** with three distinct layers:
 ---
 
 ## Core Components
+
+### Compatibility Layer (_compat.py)
+
+Provides backports for features not available in all supported Python versions.
+
+**_compat.StrEnum**
+* **Purpose:** Backport of StrEnum for Python 3.10 (added in 3.11)
+* **Behavior:** On Python 3.11+, imports from stdlib; on 3.10, provides equivalent class
+* **Usage:** All modules import StrEnum from `_compat`, not stdlib or define their own
+* **Location:** src/lib_shopify_graphql/_compat.py
+
+---
 
 ### Domain Layer (domain/)
 
@@ -304,8 +317,20 @@ Concrete implementations that interface with external systems.
 
 **adapters/parsers.parse_variant_from_mutation**
 * **Purpose:** Parse variant data from mutation response into ProductVariant model
-* **Input:** Raw dict from GraphQL mutation response
+* **Input:** VariantMutationResult typed model from GraphQL mutation response
 * **Output:** ProductVariant Pydantic model
+* **Location:** src/lib_shopify_graphql/adapters/parsers.py
+
+**adapters/parsers.parse_staged_upload_target**
+* **Purpose:** Parse staged upload response into typed StagedUploadTarget model
+* **Input:** Raw dict from GraphQL stagedUploadsCreate response
+* **Output:** StagedUploadTarget Pydantic model with typed parameters list
+* **Location:** src/lib_shopify_graphql/adapters/parsers.py
+
+**adapters/parsers.get_truncation_info**
+* **Purpose:** Analyze a product for fields that may be truncated by GraphQL limits
+* **Input:** Product model
+* **Output:** TruncationInfo typed model with truncation analysis
 * **Location:** src/lib_shopify_graphql/adapters/parsers.py
 
 **adapters/parsers.build_product_input**
@@ -673,7 +698,31 @@ Pydantic models for all Shopify data structures. Models are organized across sub
 | ImageCreateFailure | Failed image creation with error |
 | ImageDeleteResult | Result of image deletion (product_id, deleted_image_ids, deleted_media_ids) |
 | ImageReorderResult | Result of image reorder (product_id, job_id) |
-| StagedUploadTarget | Target for staged file uploads |
+| StagedUploadTarget | Target for staged file uploads (parameters as typed list) |
+| StagedUploadParameter | Typed parameter for staged uploads (name, value) |
+
+**Truncation Analysis Models:**
+
+| Model | Purpose |
+|-------|---------|
+| TruncationInfo | Full truncation analysis result (is_truncated, fields, messages) |
+| TruncationFields | Container for field-level truncation info |
+| FieldTruncationInfo | Per-field truncation details (count, limit, is_truncated) |
+
+**GraphQL Response Models:**
+
+| Model | Purpose |
+|-------|---------|
+| VariantMutationResult | Typed variant data from mutation response |
+| VariantsBulkUpdateResponse | Typed bulk update response wrapper |
+| GraphQLErrorLocation | Typed error location (line, column) |
+| GraphQLErrorExtensions | Typed error extensions with extra="allow" |
+
+**Internal TypedDicts:**
+
+| TypedDict | Purpose |
+|-----------|---------|
+| _AdaptersCache | Type-safe storage for cached adapter instances |
 
 **Metafield Deletion Models:**
 
@@ -758,6 +807,20 @@ All exceptions inherit from ShopifyError for easy catching.
 ---
 
 ## Implementation Details
+
+**Data Architecture Enforcement (v2.0.0):**
+
+All `dict[str, Any]` types at module boundaries have been replaced with typed Pydantic models:
+
+* **GraphQL Error Handling:** `GraphQLErrorLocation` and `GraphQLErrorExtensions` provide typed access to error details
+* **Mutation Responses:** `VariantMutationResult` and `VariantsBulkUpdateResponse` wrap mutation response data
+* **Truncation Analysis:** `TruncationInfo`, `TruncationFields`, `FieldTruncationInfo` provide typed analysis results
+* **Staged Uploads:** `StagedUploadTarget.parameters` uses `list[StagedUploadParameter]` instead of `dict[str, str]`
+* **Adapter Cache:** `_AdaptersCache` TypedDict replaces `dict[str, Any]` for cached adapters
+
+**Compatibility Shims:**
+
+All StrEnum compatibility code is consolidated in `_compat.py`. No other module should define its own StrEnum shim.
 
 **Architecture Enforcement:**
 

@@ -1,0 +1,131 @@
+{
+  "pass": 2,
+  "status": "complete",
+  "files": {
+    "models/_entities.py": {"violations": [], "status": "clean"},
+    "models/_operations.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Created GraphQLErrorLocation Pydantic model",
+        "Created GraphQLErrorExtensions Pydantic model with extra='allow'",
+        "Created ProductUpdateMutationProduct model",
+        "Created ProductUpdateResponseData wrapper model",
+        "Created SelectedOptionData model for variant options",
+        "Created VariantMutationResult typed model",
+        "Created VariantsBulkUpdateMutationData model",
+        "Created VariantsBulkUpdateResponseData wrapper model",
+        "Created VariantsBulkUpdateResponse typed response model",
+        "Created TruncationInfo, TruncationFields, FieldTruncationInfo models"
+      ]
+    },
+    "models/_mutations.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Added is_field_set() method for typed field access",
+        "Added get_field_value() method for typed field access",
+        "Kept get_set_fields() for boundary conversion to GraphQL input"
+      ]
+    },
+    "models/_enums.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Removed local StrEnum shim",
+        "Now imports StrEnum from shared _compat.py module"
+      ]
+    },
+    "models/_images.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Created StagedUploadParameter model for typed parameters",
+        "Changed StagedUploadTarget.parameters from dict to list[StagedUploadParameter]",
+        "Added get_parameters_dict() method for boundary conversion"
+      ]
+    },
+    "models/_internal.py": {"violations": [], "status": "clean"},
+    "adapters/parsers.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Updated parse_variant_from_mutation to accept VariantMutationResult model",
+        "Updated parse_staged_upload_target to return StagedUploadTarget model",
+        "Updated get_truncation_info to return TruncationInfo model"
+      ]
+    },
+    "adapters/shopify_sdk.py": {"violations": [], "status": "clean"},
+    "shopify_client/_products.py": {
+      "violations": [],
+      "status": "acceptable",
+      "notes": "dict params are for raw GraphQL response validation at adapter boundary"
+    },
+    "shopify_client/_variants.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Updated _convert_graphql_error_data_to_entry to use typed model attributes",
+        "Changed loc.get() to loc.line and loc.column access",
+        "Changed extensions dict conversion to use model_dump()"
+      ]
+    },
+    "shopify_client/_common.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Created _AdaptersCache TypedDict for type-safe adapter storage",
+        "Replaced dict[str, Any] cache with typed _AdaptersCache",
+        "Removed cast() calls - TypedDict provides proper typing",
+        "Created _ensure_adapters_cache() helper that returns typed cache"
+      ]
+    },
+    "application/ports.py": {"violations": [], "status": "clean"},
+    "exceptions.py": {
+      "violations": [],
+      "status": "acceptable",
+      "notes": "GraphQLErrorEntry.extensions uses dict[str, object] for exception error data at boundary"
+    },
+    "enums.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Removed local StrEnum shim",
+        "Now imports StrEnum from shared _compat.py module"
+      ]
+    },
+    "_compat.py": {
+      "violations": [],
+      "status": "new",
+      "notes": "Consolidated StrEnum compatibility shim for Python 3.10 support"
+    },
+    "cli/_test_limits.py": {
+      "violations": [],
+      "status": "fixed",
+      "fixes_applied": [
+        "Updated to use TruncationInfo typed model instead of dict",
+        "Changed all dict access to model attribute access"
+      ]
+    }
+  },
+  "total_violations_fixed": 36,
+  "remaining_violations": 0,
+  "last_updated": "2026-01-13",
+  "summary": {
+    "key_changes": [
+      "Consolidated StrEnum compatibility shim to single _compat.py module",
+      "Replaced dict[str, Any] with typed Pydantic models throughout",
+      "Created typed models for GraphQL mutation responses",
+      "Created typed models for truncation analysis",
+      "Created TypedDict for adapter cache storage",
+      "Updated parsers to return typed models instead of dicts",
+      "Updated consumers to use model attributes instead of dict access"
+    ],
+    "patterns_applied": [
+      "Pydantic at boundaries (input/output)",
+      "No internal dicts for structured data",
+      "Single conversion at boundary",
+      "TypedDict for typed dictionary patterns"
+    ]
+  }
+}

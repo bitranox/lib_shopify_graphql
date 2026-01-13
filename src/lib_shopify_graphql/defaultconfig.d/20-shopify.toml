@@ -21,7 +21,7 @@ shop_url = "test-shop-lib-graphql.myshopify.com"
 # See: https://shopify.dev/docs/api/usage/versioning
 # .env:   SHOPIFY__API_VERSION
 # Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__API_VERSION
-api_version = "2026-01"
+# api_version = "2026-01"
 
 # OAuth Client Credentials (from Dev Dashboard)
 # Get from: https://dev.shopify.com/dashboard -> Your App -> Client credentials

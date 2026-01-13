@@ -423,6 +423,39 @@ class UserErrorData(BaseModel):
         return result
 
 
+class GraphQLErrorLocation(BaseModel):
+    """Location in a GraphQL query where an error occurred.
+
+    Attributes:
+        line: Line number in the query (1-based).
+        column: Column number in the query (1-based).
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    line: int = 0
+    column: int = 0
+
+
+class GraphQLErrorExtensions(BaseModel):
+    """Additional metadata from GraphQL errors.
+
+    Shopify includes extension data with errors for debugging.
+    This model captures common fields while allowing extra fields.
+
+    Attributes:
+        code: Error code from Shopify.
+        documentation: Link to documentation.
+        request_id: Shopify request ID for support.
+    """
+
+    model_config = ConfigDict(frozen=True, extra="allow")
+
+    code: str | None = None
+    documentation: str | None = None
+    request_id: str | None = Field(default=None, alias="requestId")
+
+
 class GraphQLErrorData(BaseModel):
     """Parsed GraphQL error from API response.
 
@@ -439,9 +472,25 @@ class GraphQLErrorData(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     message: str = "Unknown error"
-    locations: list[dict[str, int]] | None = None
+    locations: list[GraphQLErrorLocation] | None = None
     path: list[str | int] | None = None
-    extensions: dict[str, Any] | None = None
+    extensions: GraphQLErrorExtensions | None = None
+
+
+class ProductUpdateMutationProduct(BaseModel):
+    """Product data returned from productUpdate mutation.
+
+    This is a minimal model for the mutation response - it only
+    contains the `id` field since we re-fetch the full product
+    after mutation to get complete data.
+
+    Attributes:
+        id: Product GID.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    id: str
 
 
 class ProductUpdateMutationData(BaseModel):
@@ -454,8 +503,20 @@ class ProductUpdateMutationData(BaseModel):
 
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    product: dict[str, Any] | None = None
+    product: ProductUpdateMutationProduct | None = None
     user_errors: list[UserErrorData] = Field(default_factory=list[UserErrorData], alias="userErrors")
+
+
+class ProductUpdateResponseData(BaseModel):
+    """Data wrapper for productUpdate mutation response.
+
+    Attributes:
+        product_update: The productUpdate mutation result.
+    """
+
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    product_update: ProductUpdateMutationData | None = Field(default=None, alias="productUpdate")
 
 
 class ProductUpdateResponse(BaseModel):
@@ -471,7 +532,7 @@ class ProductUpdateResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     errors: list[GraphQLErrorData] | None = None
-    data: dict[str, ProductUpdateMutationData] | None = None
+    data: ProductUpdateResponseData | None = None
 
     @property
     def has_graphql_errors(self) -> bool:
@@ -483,13 +544,58 @@ class ProductUpdateResponse(BaseModel):
         """Get productUpdate mutation data."""
         if self.data is None:
             return None
-        return self.data.get("productUpdate")
+        return self.data.product_update
 
     @property
     def has_user_errors(self) -> bool:
         """Check if mutation returned user errors."""
         mutation = self.mutation_data
         return mutation is not None and len(mutation.user_errors) > 0
+
+
+class SelectedOptionData(BaseModel):
+    """Selected option name/value pair from mutation response.
+
+    Attributes:
+        name: Option name (e.g., "Size", "Color").
+        value: Option value (e.g., "Large", "Blue").
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    value: str
+
+
+class VariantMutationResult(BaseModel):
+    """Variant data returned from bulk update mutation.
+
+    Contains the fields returned by the mutation for each updated variant.
+    Structure matches the productVariantsBulkUpdate response.
+
+    Attributes:
+        id: Variant GID.
+        title: Variant title.
+        sku: SKU (stock keeping unit).
+        barcode: Barcode value (optional).
+        price: Current price as string.
+        compare_at_price: Compare-at price as string (optional).
+        inventory_policy: Inventory policy (DENY or CONTINUE).
+        taxable: Whether variant is taxable.
+        selected_options: List of selected option name/value pairs.
+    """
+
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    id: str
+    title: str = ""
+    sku: str | None = None
+    barcode: str | None = None
+    price: str = "0"
+    compare_at_price: str | None = Field(default=None, alias="compareAtPrice")
+    inventory_policy: str | None = Field(default=None, alias="inventoryPolicy")
+    taxable: bool = True
+    selected_options: list[SelectedOptionData] = Field(default_factory=list[SelectedOptionData], alias="selectedOptions")
 
 
 class VariantsBulkUpdateMutationData(BaseModel):
@@ -502,8 +608,20 @@ class VariantsBulkUpdateMutationData(BaseModel):
 
     model_config = ConfigDict(frozen=True, populate_by_name=True)
 
-    product_variants: list[dict[str, Any]] = Field(default_factory=list[dict[str, Any]], alias="productVariants")
+    product_variants: list[VariantMutationResult] = Field(default_factory=list[VariantMutationResult], alias="productVariants")
     user_errors: list[UserErrorData] = Field(default_factory=list[UserErrorData], alias="userErrors")
+
+
+class VariantsBulkUpdateResponseData(BaseModel):
+    """Data wrapper for productVariantsBulkUpdate mutation response.
+
+    Attributes:
+        product_variants_bulk_update: The mutation result.
+    """
+
+    model_config = ConfigDict(frozen=True, populate_by_name=True)
+
+    product_variants_bulk_update: VariantsBulkUpdateMutationData | None = Field(default=None, alias="productVariantsBulkUpdate")
 
 
 class VariantsBulkUpdateResponse(BaseModel):
@@ -519,7 +637,7 @@ class VariantsBulkUpdateResponse(BaseModel):
     model_config = ConfigDict(frozen=True)
 
     errors: list[GraphQLErrorData] | None = None
-    data: dict[str, VariantsBulkUpdateMutationData] | None = None
+    data: VariantsBulkUpdateResponseData | None = None
 
     @property
     def has_graphql_errors(self) -> bool:
@@ -531,13 +649,81 @@ class VariantsBulkUpdateResponse(BaseModel):
         """Get productVariantsBulkUpdate mutation data."""
         if self.data is None:
             return None
-        return self.data.get("productVariantsBulkUpdate")
+        return self.data.product_variants_bulk_update
 
     @property
     def has_user_errors(self) -> bool:
         """Check if mutation returned user errors."""
         mutation = self.mutation_data
         return mutation is not None and len(mutation.user_errors) > 0
+
+
+# =============================================================================
+# Truncation Analysis Models
+# =============================================================================
+
+
+class FieldTruncationInfo(BaseModel):
+    """Truncation status for a single product field.
+
+    Attributes:
+        count: Number of items returned.
+        limit: Configured limit for this field.
+        truncated: Whether this field was truncated.
+        config_key: Config key name to increase limit.
+        env_var: Environment variable to increase limit.
+        cost_warning: Optional cost impact warning.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    count: int
+    limit: int
+    truncated: bool
+    config_key: str
+    env_var: str
+    cost_warning: str | None = None
+
+
+class TruncationFields(BaseModel):
+    """Truncation status for all product fields.
+
+    Attributes:
+        images: Image field truncation info.
+        media: Media field truncation info.
+        metafields: Metafield truncation info.
+        variants: Variant truncation info.
+        variant_metafields: Variant metafield truncation info.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    images: FieldTruncationInfo
+    media: FieldTruncationInfo
+    metafields: FieldTruncationInfo
+    variants: FieldTruncationInfo
+    variant_metafields: FieldTruncationInfo
+
+
+class TruncationInfo(BaseModel):
+    """Complete truncation analysis result for a product.
+
+    Returned by get_truncation_info() to provide structured
+    information about which fields were truncated.
+
+    Attributes:
+        product_id: Product GID.
+        product_title: Product title.
+        truncated: True if any field was truncated.
+        fields: Per-field truncation details.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    product_id: str
+    product_title: str
+    truncated: bool
+    fields: TruncationFields
 
 
 __all__ = [
@@ -559,4 +745,8 @@ __all__ = [
     # Product lifecycle
     "DeleteProductResult",
     "DuplicateProductResult",
+    # Truncation analysis
+    "FieldTruncationInfo",
+    "TruncationFields",
+    "TruncationInfo",
 ]

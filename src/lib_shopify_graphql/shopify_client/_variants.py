@@ -21,7 +21,7 @@ from ..adapters.parsers import (
     format_graphql_errors,
     parse_variant_from_mutation,
 )
-from ..exceptions import GraphQLError, GraphQLErrorEntry, GraphQLErrorLocation, ProductNotFoundError, VariantNotFoundError, SessionNotActiveError
+from ..exceptions import GraphQLError, GraphQLErrorEntry, GraphQLErrorLocation, ProductNotFoundError, SessionNotActiveError, VariantNotFoundError
 from ..models import Product, ProductUpdate, ProductVariant, VariantUpdate
 from ..models._operations import (
     GraphQLErrorData,
@@ -40,9 +40,9 @@ def _convert_graphql_error_data_to_entry(error_data: GraphQLErrorData) -> GraphQ
     """Convert a GraphQLErrorData Pydantic model to a GraphQLErrorEntry dataclass."""
     locations = None
     if error_data.locations:
-        locations = tuple(GraphQLErrorLocation(line=loc.get("line", 0), column=loc.get("column", 0)) for loc in error_data.locations)
+        locations = tuple(GraphQLErrorLocation(line=loc.line, column=loc.column) for loc in error_data.locations)
     path = tuple(error_data.path) if error_data.path else None
-    extensions = dict(error_data.extensions) if error_data.extensions else None
+    extensions = error_data.extensions.model_dump() if error_data.extensions else None
     return GraphQLErrorEntry(
         message=error_data.message,
         locations=locations,

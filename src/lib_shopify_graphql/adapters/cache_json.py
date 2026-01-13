@@ -22,7 +22,7 @@ from typing import Any
 import orjson
 from filelock import FileLock, Timeout
 
-from .constants import DEFAULT_LOCK_TIMEOUT_SECONDS, DEFAULT_CACHE_RETRY_COUNT
+from .constants import DEFAULT_CACHE_RETRY_COUNT, DEFAULT_LOCK_TIMEOUT_SECONDS
 
 logger = logging.getLogger(__name__)
 

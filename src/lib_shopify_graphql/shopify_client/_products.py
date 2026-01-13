@@ -18,17 +18,17 @@ from ..adapters.mutations import (
     PRODUCT_DELETE_MUTATION,
     PRODUCT_DUPLICATE_MUTATION,
 )
-from ..adapters.queries import (
-    PRODUCT_QUERY,
-    PRODUCTS_LIST_QUERY,
-    get_limits_from_config,
-)
 from ..adapters.parsers import (
     build_product_create_input,
     format_graphql_errors,
     parse_graphql_errors,
     parse_product,
     parse_product_connection,
+)
+from ..adapters.queries import (
+    PRODUCT_QUERY,
+    PRODUCTS_LIST_QUERY,
+    get_limits_from_config,
 )
 from ..exceptions import (
     AmbiguousSKUError,

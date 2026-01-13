@@ -8,7 +8,7 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass, field
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import lib_log_rich.runtime
 import rich_click as click
@@ -18,6 +18,9 @@ from ..adapters.queries import PRODUCTS_LIST_QUERY, get_limits_from_config
 from ..exceptions import AuthenticationError, GraphQLError
 from ..shopify_client import ShopifySession
 from ._common import CLICK_CONTEXT_SETTINGS, get_effective_config_and_profile
+
+if TYPE_CHECKING:
+    from ..models._operations import TruncationInfo
 
 logger = logging.getLogger(__name__)
 
@@ -36,7 +39,7 @@ class _FieldMaxInfo:
     truncated: bool = False
 
 
-def _empty_truncation_list() -> list[dict[str, Any]]:
+def _empty_truncation_list() -> list[TruncationInfo]:
     """Create empty truncation issues list (typed factory for pyright)."""
     return []
 
@@ -50,7 +53,7 @@ def _empty_max_values_dict() -> dict[str, _FieldMaxInfo]:
 class _TruncationAnalysis:
     """Results of analyzing products for truncation."""
 
-    truncation_issues: list[dict[str, Any]] = field(default_factory=_empty_truncation_list)
+    truncation_issues: list[TruncationInfo] = field(default_factory=_empty_truncation_list)
     max_values: dict[str, _FieldMaxInfo] = field(default_factory=_empty_max_values_dict)
     total_products: int = 0
 
@@ -104,7 +107,7 @@ def _display_max_values(analysis: _TruncationAnalysis, limits: Any) -> None:
     click.echo()
 
 
-def _display_truncation_issues(issues: list[dict[str, Any]]) -> dict[str, list[tuple[str, str, int]]]:
+def _display_truncation_issues(issues: list[TruncationInfo]) -> dict[str, list[tuple[str, str, int]]]:
     """Display individual truncation issues and return field summary."""
     click.echo(f"✗ TRUNCATION DETECTED in {len(issues)} product(s):")
     click.echo("  Data is being lost! Increase the affected limits.")
@@ -113,35 +116,44 @@ def _display_truncation_issues(issues: list[dict[str, Any]]) -> dict[str, list[t
     field_summary: dict[str, list[tuple[str, str, int]]] = {}
 
     for info in issues:
-        product_id = info["product_id"]
-        title = info["product_title"]
+        product_id = info.product_id
+        title = info.product_title
         short_id = product_id.split("/")[-1] if "/" in product_id else product_id
 
-        for field_name, field_info in info["fields"].items():
-            if not field_info["truncated"]:
+        # Iterate through fields using model attributes
+        fields_data = [
+            ("images", info.fields.images),
+            ("media", info.fields.media),
+            ("metafields", info.fields.metafields),
+            ("variants", info.fields.variants),
+            ("variant_metafields", info.fields.variant_metafields),
+        ]
+
+        for field_name, field_info in fields_data:
+            if not field_info.truncated:
                 continue
-            field_summary.setdefault(field_name, []).append((title, short_id, field_info["count"]))
+            field_summary.setdefault(field_name, []).append((title, short_id, field_info.count))
             click.echo(f"  Product: '{title}' (ID: {short_id})")
-            click.echo(f"    {field_name}: {field_info['count']}+ items (TRUNCATED)")
-            if "cost_warning" in field_info:
-                click.echo(f"    ⚠ {field_info['cost_warning']}")
+            click.echo(f"    {field_name}: {field_info.count}+ items (TRUNCATED)")
+            if field_info.cost_warning:
+                click.echo(f"    ⚠ {field_info.cost_warning}")
             click.echo()
 
     return field_summary
 
 
-def _find_config_info(field_name: str, truncation_issues: list[dict[str, Any]]) -> tuple[str | None, str | None]:
+def _find_config_info(field_name: str, truncation_issues: list[TruncationInfo]) -> tuple[str | None, str | None]:
     """Find config key and env var for a truncated field."""
     for info in truncation_issues:
-        field_info = info["fields"].get(field_name, {})
-        if field_info.get("truncated"):
-            return field_info.get("config_key"), field_info.get("env_var")
+        field_info = getattr(info.fields, field_name, None)
+        if field_info is not None and field_info.truncated:
+            return field_info.config_key, field_info.env_var
     return None, None
 
 
 def _display_recommendations(
     field_summary: dict[str, list[tuple[str, str, int]]],
-    truncation_issues: list[dict[str, Any]],
+    truncation_issues: list[TruncationInfo],
     limits: Any,
 ) -> None:
     """Display recommendations for fixing truncation issues."""
@@ -172,22 +184,31 @@ def _display_recommendations(
 # =============================================================================
 
 
-def _update_max_values(analysis: _TruncationAnalysis, info: dict[str, Any]) -> None:
+def _update_max_values(analysis: _TruncationAnalysis, info: TruncationInfo) -> None:
     """Update max values tracking from a single product's truncation info."""
-    product_id = info["product_id"]
-    title = info["product_title"]
+    product_id = info.product_id
+    title = info.product_title
     short_id = product_id.split("/")[-1] if "/" in product_id else product_id
     product_label = f"'{title}' (ID: {short_id})"
 
-    for field_name, field_info in info["fields"].items():
+    # Iterate through fields using model attributes
+    fields_data = [
+        ("images", info.fields.images),
+        ("media", info.fields.media),
+        ("metafields", info.fields.metafields),
+        ("variants", info.fields.variants),
+        ("variant_metafields", info.fields.variant_metafields),
+    ]
+
+    for field_name, field_info in fields_data:
         current = analysis.max_values[field_name]
-        if field_info["count"] > current.count:
+        if field_info.count > current.count:
             analysis.max_values[field_name] = _FieldMaxInfo(
-                count=field_info["count"],
+                count=field_info.count,
                 product=product_label,
-                truncated=field_info["truncated"],
+                truncated=field_info.truncated,
             )
-        elif field_info["count"] == current.count and field_info["truncated"]:
+        elif field_info.count == current.count and field_info.truncated:
             current.truncated = True
 
 
@@ -216,7 +237,7 @@ def _analyze_products(
             info = get_truncation_info(product_data)
             _update_max_values(analysis, info)
 
-            if info["truncated"]:
+            if info.truncated:
                 analysis.truncation_issues.append(info)
 
             analysis.total_products += 1

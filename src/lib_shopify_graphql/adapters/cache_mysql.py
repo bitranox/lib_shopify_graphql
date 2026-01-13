@@ -212,7 +212,7 @@ class MySQLCacheAdapter:
         table_name: str = DEFAULT_SKU_CACHE_TABLE,
         connect_timeout: int = DEFAULT_MYSQL_CONNECT_TIMEOUT_SECONDS,
         auto_create_database: bool = True,
-    ) -> "MySQLCacheAdapter":
+    ) -> MySQLCacheAdapter:
         """Create adapter from a connection URL string.
 
         Args:
@@ -485,7 +485,7 @@ class MySQLCacheAdapter:
             logger.warning(f"Cache keys error: {exc}")
             return []
 
-    def __enter__(self) -> "MySQLCacheAdapter":
+    def __enter__(self) -> MySQLCacheAdapter:
         """Enter context manager, returning self.
 
         Example:

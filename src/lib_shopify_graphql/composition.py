@@ -36,12 +36,12 @@ from pathlib import Path
 from typing import Any, TypedDict
 
 from .adapters import (
+    PYMYSQL_AVAILABLE,
     CachedSKUResolver,
     CachedTokenProvider,
     JsonFileCacheAdapter,
     LocationResolver,
     MySQLCacheAdapter,
-    PYMYSQL_AVAILABLE,
     ShopifyGraphQLClient,
     ShopifySessionManager,
     ShopifyTokenProvider,

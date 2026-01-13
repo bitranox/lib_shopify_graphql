@@ -53,7 +53,6 @@ from ..models import (
 from ._common import _normalize_media_gid, _normalize_product_gid
 from ._session import ShopifySession
 
-
 # =============================================================================
 # Internal TypedDicts for Raw GraphQL Response Parsing
 # =============================================================================
@@ -181,12 +180,7 @@ def _create_staged_upload(
     if not targets:
         raise ImageUploadError(str(file_path), "No staged upload target returned")
 
-    parsed = parse_staged_upload_target(targets[0])
-    return StagedUploadTarget(
-        url=parsed["url"],
-        resource_url=parsed["resource_url"],
-        parameters=parsed["parameters"],
-    )
+    return parse_staged_upload_target(targets[0])
 
 
 def _upload_file_to_staged_target(
@@ -223,8 +217,8 @@ def _upload_file_to_staged_target(
         else:
             # S3-style uses POST with multipart form data
             files: dict[str, Any] = {}
-            for key, value in staged_target.parameters.items():
-                files[key] = (None, value)
+            for param in staged_target.parameters:
+                files[param.name] = (None, param.value)
             files["file"] = (file_path.name, file_content, mime_type)
 
             response = httpx.post(

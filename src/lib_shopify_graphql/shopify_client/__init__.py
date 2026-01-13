@@ -22,8 +22,31 @@ Note:
 
 from __future__ import annotations
 
-# Session management
-from ._session import ShopifySession, login, logout
+# Cache operations
+from ._cache import (
+    CacheCheckResult,
+    CacheMismatch,
+    cache_clear_all,
+    skucache_check,
+    skucache_clear,
+    tokencache_clear,
+)
+
+# Image operations
+from ._images import (
+    create_image,
+    create_images,
+    delete_image,
+    delete_images,
+    reorder_images,
+    update_image,
+)
+
+# Inventory operations
+from ._inventory import adjust_inventory, set_inventory
+
+# Metafield operations
+from ._metafields import delete_metafield, delete_metafields
 
 # Product operations
 from ._products import (
@@ -39,35 +62,12 @@ from ._products import (
     skucache_rebuild,
 )
 
+# Session management
+from ._session import ShopifySession, login, logout
+
 # Variant operations
 from ._variants import update_product, update_variant
 from ._variants_bulk import update_variants_bulk
-
-# Inventory operations
-from ._inventory import adjust_inventory, set_inventory
-
-# Cache operations
-from ._cache import (
-    CacheCheckResult,
-    CacheMismatch,
-    cache_clear_all,
-    skucache_check,
-    skucache_clear,
-    tokencache_clear,
-)
-
-# Metafield operations
-from ._metafields import delete_metafield, delete_metafields
-
-# Image operations
-from ._images import (
-    create_image,
-    create_images,
-    delete_image,
-    delete_images,
-    reorder_images,
-    update_image,
-)
 
 __all__ = [
     "ShopifySession",

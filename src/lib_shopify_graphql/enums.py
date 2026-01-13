@@ -15,18 +15,7 @@ Note:
 
 from __future__ import annotations
 
-import sys
-
-if sys.version_info >= (3, 11):
-    from enum import StrEnum
-else:
-    from enum import Enum
-
-    class StrEnum(str, Enum):
-        """Compatibility shim for Python 3.10."""
-
-        def __str__(self) -> str:
-            return str(self.value)
+from ._compat import StrEnum
 
 
 class OutputFormat(StrEnum):

@@ -78,8 +78,36 @@ class ImageUpdate(BaseModel):
 
     alt_text: Updatable[str] = UNSET
 
+    def is_field_set(self, field_name: str) -> bool:
+        """Check if a field has been set (is not UNSET).
+
+        Args:
+            field_name: Name of the field to check.
+
+        Returns:
+            True if the field has a value (not UNSET).
+        """
+        return getattr(self, field_name, UNSET) is not UNSET
+
+    def get_field_value(self, field_name: str) -> object:
+        """Get the value of a field.
+
+        Args:
+            field_name: Name of the field to get.
+
+        Returns:
+            The field value, or UNSET if not set.
+        """
+        return getattr(self, field_name, UNSET)
+
     def get_set_fields(self) -> dict[str, object]:
-        """Return only fields that are not UNSET."""
+        """Return only fields that are not UNSET.
+
+        Note: This method is for adapter boundary conversion to GraphQL input.
+
+        Returns:
+            Dictionary of field names to values for fields that should be updated.
+        """
         result: dict[str, object] = {}
         for field_name in type(self).model_fields:
             value = getattr(self, field_name)
@@ -91,6 +119,20 @@ class ImageUpdate(BaseModel):
 # =============================================================================
 # Result Models
 # =============================================================================
+
+
+class StagedUploadParameter(BaseModel):
+    """A single authentication parameter for staged upload.
+
+    Attributes:
+        name: Parameter name (header key).
+        value: Parameter value.
+    """
+
+    model_config = ConfigDict(frozen=True)
+
+    name: str
+    value: str
 
 
 class StagedUploadTarget(BaseModel):
@@ -108,7 +150,15 @@ class StagedUploadTarget(BaseModel):
 
     url: str
     resource_url: str
-    parameters: dict[str, str] = Field(default_factory=dict)
+    parameters: list[StagedUploadParameter] = Field(default_factory=list[StagedUploadParameter])
+
+    def get_parameters_dict(self) -> dict[str, str]:
+        """Get parameters as a dictionary for HTTP requests.
+
+        Returns:
+            Dictionary of parameter names to values.
+        """
+        return {p.name: p.value for p in self.parameters}
 
 
 class ImageCreateSuccess(BaseModel):
@@ -222,5 +272,6 @@ __all__ = [
     "ImageReorderResult",
     "ImageSource",
     "ImageUpdate",
+    "StagedUploadParameter",
     "StagedUploadTarget",
 ]
