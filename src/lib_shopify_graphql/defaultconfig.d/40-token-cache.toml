@@ -1,0 +1,66 @@
+# ==============================================================================
+# Token Cache Configuration
+# ==============================================================================
+#
+# OAuth access tokens can be cached to reduce authentication requests.
+# Tokens are valid for 24 hours. Caching avoids repeated OAuth handshakes.
+#
+# Benefits:
+#   - Faster startup (no OAuth request if cached token is valid)
+#   - Reduced API rate limit usage
+#   - Works across process restarts
+#
+[shopify.token_cache]
+# Enable token caching
+# When enabled, tokens are cached and reused until near expiration
+# .env:   SHOPIFY__TOKEN_CACHE__ENABLED
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__TOKEN_CACHE__ENABLED
+enabled = true
+
+# Cache backend: "json" or "mysql"
+# - json: File-based with filelock (good for single machine or network shares)
+# - mysql: Database-backed (good for distributed/multi-machine setups)
+# .env:   SHOPIFY__TOKEN_CACHE__BACKEND
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__TOKEN_CACHE__BACKEND
+backend = "json"
+
+# Refresh margin in seconds (default: 5 minutes = 300 seconds)
+# Tokens are refreshed this many seconds before expiration
+# .env:   SHOPIFY__TOKEN_CACHE__REFRESH_MARGIN
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__TOKEN_CACHE__REFRESH_MARGIN
+refresh_margin = 300
+
+# JSON backend settings
+# ----------------------
+# Path to the JSON cache file for tokens
+# Directory is created automatically if it doesn't exist
+#
+# Default paths by operating system (when empty):
+#   Linux:   ~/.cache/lib-shopify-graphql/token_cache.json
+#   macOS:   ~/Library/Caches/lib-shopify-graphql/token_cache.json
+#   Windows: %LOCALAPPDATA%\lib-shopify-graphql\token_cache.json
+#
+# Set explicitly to override the default:
+#   json_path = "/custom/path/token_cache.json"
+#
+# .env:   SHOPIFY__TOKEN_CACHE__JSON_PATH
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__TOKEN_CACHE__JSON_PATH
+json_path = ""
+
+# Lock timeout in seconds (for filelock)
+# Increase for slow network shares
+# .env:   SHOPIFY__TOKEN_CACHE__LOCK_TIMEOUT
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__TOKEN_CACHE__LOCK_TIMEOUT
+lock_timeout = 10.0
+
+# MySQL backend settings
+# ----------------------
+# Uses [shopify.mysql.connection] if not specified here
+# .env:   SHOPIFY__TOKEN_CACHE__MYSQL_CONNECTION
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__TOKEN_CACHE__MYSQL_CONNECTION
+mysql_connection = ""
+
+# Table name for token cache entries (created automatically)
+# .env:   SHOPIFY__TOKEN_CACHE__MYSQL_TABLE
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__TOKEN_CACHE__MYSQL_TABLE
+mysql_table = "token_cache"

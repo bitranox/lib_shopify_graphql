@@ -1,0 +1,84 @@
+# ==============================================================================
+# MySQL Database Configuration (Shared)
+# ==============================================================================
+#
+# Shared MySQL settings used by both token and SKU caches when backend="mysql".
+# The database and tables are created automatically on first use.
+#
+# You can configure MySQL in two ways:
+#
+# 1. CONNECTION STRING (recommended for simple setups):
+#    Set `connection` to a MySQL URL:
+#    mysql://user:password@host:port/database
+#
+# 2. INDIVIDUAL PARAMETERS (useful when password contains special characters):
+#    Set `host`, `port`, `user`, `password`, and `database` separately.
+#    Leave `connection` empty when using individual parameters.
+#
+# If both `connection` and individual parameters are set, `connection` takes
+# precedence (individual parameters are ignored).
+#
+# Connection string examples:
+#   mysql://shopify_app:secret@localhost:3306/shopify_cache
+#   mysql://root@127.0.0.1/cache
+#
+# Required MySQL user privileges:
+#   - CREATE (for database and table creation)
+#   - SELECT, INSERT, UPDATE, DELETE (for cache operations)
+#
+[shopify.mysql]
+
+# ==============================================================================
+# Option 1: Connection String (takes precedence if set)
+# ==============================================================================
+# MySQL connection URL - if set, individual parameters below are ignored.
+# Format: mysql://user:password@host:port/database
+# Example: "mysql://shopify_app:secret@localhost:3306/shopify_cache"
+# .env:   SHOPIFY__MYSQL__CONNECTION
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__MYSQL__CONNECTION
+connection = ""
+
+# ==============================================================================
+# Option 2: Individual Parameters (used when connection is empty)
+# ==============================================================================
+# These are used only if `connection` above is empty.
+# Useful when password contains special characters that would need URL encoding.
+
+# MySQL server hostname
+# .env:   SHOPIFY__MYSQL__HOST
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__MYSQL__HOST
+host = "localhost"
+
+# MySQL server port
+# .env:   SHOPIFY__MYSQL__PORT
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__MYSQL__PORT
+port = 3306
+
+# MySQL username (required when using individual parameters)
+# .env:   SHOPIFY__MYSQL__USER
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__MYSQL__USER
+user = ""
+
+# MySQL password (required when using individual parameters)
+# .env:   SHOPIFY__MYSQL__PASSWORD
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__MYSQL__PASSWORD
+password = ""
+
+# MySQL database name (created automatically if auto_create_database=true)
+# .env:   SHOPIFY__MYSQL__DATABASE
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__MYSQL__DATABASE
+database = ""
+
+# ==============================================================================
+# Common Settings (apply to both connection methods)
+# ==============================================================================
+
+# Auto-create database if it doesn't exist (requires CREATE privilege)
+# .env:   SHOPIFY__MYSQL__AUTO_CREATE_DATABASE
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__MYSQL__AUTO_CREATE_DATABASE
+auto_create_database = true
+
+# Connection timeout in seconds
+# .env:   SHOPIFY__MYSQL__CONNECT_TIMEOUT
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__MYSQL__CONNECT_TIMEOUT
+connect_timeout = 10

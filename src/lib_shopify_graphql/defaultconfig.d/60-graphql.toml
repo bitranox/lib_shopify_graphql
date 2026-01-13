@@ -1,0 +1,118 @@
+# ==============================================================================
+# GraphQL Query Limits Configuration
+# ==============================================================================
+#
+# Shopify's GraphQL Admin API enforces a query cost limit of 1000 points per query.
+# Each field and connection contributes to the total cost. Nested connections
+# multiply: variants(first: 100) with metafields(first: 25) = 2500+ cost.
+#
+# These limits control how many items are fetched in nested connections.
+# Lower values reduce query cost but may truncate data for products with many
+# variants, images, or metafields.
+#
+# When limits are hit, the library logs warnings with recommendations.
+#
+# Shopify cost calculation (approximate):
+#   - Each scalar field: ~1 point
+#   - Each connection: first * (cost of nested fields)
+#   - Deeply nested connections multiply exponentially
+#
+# Example costs (single product query):
+#   - Default limits below: ~400-500 points (safe margin)
+#   - variants=100, metafields=25: ~2500+ points (exceeds limit!)
+#
+# Reference: https://shopify.dev/docs/api/usage/rate-limits#graphql-admin-api-rate-limits
+#
+# NOTE: All product-related settings are prefixed with "product_" to allow
+#       future resource-specific limits (e.g., order_*, customer_*).
+#
+[graphql]
+# ---------------------------------------------------------------------------
+# Product Query Limits - Nested Connections
+# ---------------------------------------------------------------------------
+
+# Maximum images to fetch per product
+# Products rarely have more than 10-20 images; 20 covers most cases.
+# .env:   GRAPHQL__PRODUCT_MAX_IMAGES
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_MAX_IMAGES
+product_max_images = 20
+
+# Maximum media items (images, videos, 3D models) per product
+# Includes all media types, not just images.
+# .env:   GRAPHQL__PRODUCT_MAX_MEDIA
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_MAX_MEDIA
+product_max_media = 20
+
+# Maximum product options (e.g., Size, Color)
+# Shopify allows max 3 options per product, but API returns more metadata.
+# .env:   GRAPHQL__PRODUCT_MAX_OPTIONS
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_MAX_OPTIONS
+product_max_options = 10
+
+# Maximum metafields per product
+# Custom data fields. Increase if using many metafields.
+# .env:   GRAPHQL__PRODUCT_MAX_METAFIELDS
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_MAX_METAFIELDS
+product_max_metafields = 10
+
+# ---------------------------------------------------------------------------
+# Product Query Limits - Variant-Level
+# ---------------------------------------------------------------------------
+
+# Maximum variants per product
+# Most products have <10 variants. Products with many options (3x10x10=300)
+# are rare. Set higher if your catalog has high-variant products.
+# WARNING: High values combined with variant metafields cause cost explosion!
+# .env:   GRAPHQL__PRODUCT_MAX_VARIANTS
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_MAX_VARIANTS
+product_max_variants = 20
+
+# Maximum metafields per variant
+# Variant-level custom data. Keep low as this multiplies with max_variants.
+# Cost contribution: product_max_variants * product_max_variant_metafields
+# .env:   GRAPHQL__PRODUCT_MAX_VARIANT_METAFIELDS
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_MAX_VARIANT_METAFIELDS
+product_max_variant_metafields = 5
+
+# ---------------------------------------------------------------------------
+# Product Pagination Limits
+# ---------------------------------------------------------------------------
+#
+# Two page size settings exist for different use cases:
+#
+#   product_default_page_size (50)  - Used by list_products_paginated() as the
+#                                     default 'first' parameter. For manual
+#                                     pagination where you control cursors.
+#
+#   product_iter_page_size (250)    - Used by iter_products() and list_products()
+#                                     which auto-paginate through ALL products.
+#                                     Uses maximum batch size to minimize API calls.
+#
+# ---------------------------------------------------------------------------
+
+# Default page size for list_products_paginated(first=...) when 'first' not specified.
+# Used for MANUAL pagination where you handle cursors yourself.
+# Smaller default (50) gives more control; override with first= parameter as needed.
+# Shopify max is 250. Recommended: 50-100 for balanced performance.
+# .env:   GRAPHQL__PRODUCT_DEFAULT_PAGE_SIZE
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_DEFAULT_PAGE_SIZE
+product_default_page_size = 50
+
+# Page size for iter_products() and list_products() AUTO-PAGINATION.
+# These functions iterate through ALL products automatically, handling cursors
+# internally. Uses max (250) by default to minimize total API calls.
+# Lower values reduce memory per batch but increase number of API requests.
+# Shopify max is 250.
+# .env:   GRAPHQL__PRODUCT_ITER_PAGE_SIZE
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_ITER_PAGE_SIZE
+product_iter_page_size = 250
+
+# ---------------------------------------------------------------------------
+# Product Warning Behavior
+# ---------------------------------------------------------------------------
+
+# Log warnings when fetched count equals limit (possible truncation)
+# Set to false to suppress truncation warnings.
+# .env:   GRAPHQL__PRODUCT_WARN_ON_TRUNCATION
+# Shell:  LIB_SHOPIFY_GRAPHQL___GRAPHQL__PRODUCT_WARN_ON_TRUNCATION
+product_warn_on_truncation = true

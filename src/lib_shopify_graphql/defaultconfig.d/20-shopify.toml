@@ -1,0 +1,47 @@
+# ==============================================================================
+# Shopify API Configuration (Client Credentials Grant)
+# ==============================================================================
+#
+# This library uses OAuth 2.0 Client Credentials Grant for authentication.
+# Apps created via https://dev.shopify.com/dashboard use this method.
+#
+# Quick Start (.env file):
+#   SHOPIFY__SHOP_URL=mystore.myshopify.com
+#   SHOPIFY__CLIENT_ID=your_client_id_here
+#   SHOPIFY__CLIENT_SECRET=your_client_secret_here
+#
+[shopify]
+# Shopify store URL (without https://)
+# Supports both default domains (mystore.myshopify.com) and custom domains (shop.example.com)
+# .env:   SHOPIFY__SHOP_URL
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__SHOP_URL
+shop_url = "test-shop-lib-graphql.myshopify.com"
+
+# Shopify API version (format: YYYY-MM)
+# See: https://shopify.dev/docs/api/usage/versioning
+# .env:   SHOPIFY__API_VERSION
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__API_VERSION
+api_version = "2026-01"
+
+# OAuth Client Credentials (from Dev Dashboard)
+# Get from: https://dev.shopify.com/dashboard -> Your App -> Client credentials
+# NEVER store secrets in config files - use .env or environment variables!
+# .env:   SHOPIFY__CLIENT_ID
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__CLIENT_ID
+client_id = ""
+# .env:   SHOPIFY__CLIENT_SECRET
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__CLIENT_SECRET
+client_secret = ""
+
+# Default location for inventory operations (optional)
+# If not set, uses shop's primary location (auto-fetched)
+# Format: GID ("gid://shopify/Location/123") or numeric ID ("123")
+# .env:   SHOPIFY__DEFAULT_LOCATION_ID
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__DEFAULT_LOCATION_ID
+default_location_id = ""
+
+# Default currency code (ISO 4217) for monetary operations
+# Common codes: USD, EUR, GBP, CAD, AUD, JPY
+# .env:   SHOPIFY__DEFAULT_CURRENCY
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__DEFAULT_CURRENCY
+default_currency = "EUR"

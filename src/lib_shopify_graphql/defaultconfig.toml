@@ -1,0 +1,56 @@
+# Default configuration for lib_shopify_graphql
+#
+# This file contains the default configuration that ships with the application.
+# Additional settings can be placed in defaultconfig.d/*.toml
+#
+# Settings can be overridden via:
+#   - Application-level config (Linux):
+#        - /etc/xdg/lib-shopify-graphql/config.[toml|yaml|json]
+#        - /etc/xdg/lib-shopify-graphql/config.d/*.[toml|yaml|json]
+#   - Host-level config (macOS):
+#        - /Library/Application Support/bitranox/Lib Shopify GraphQL/config.[toml|yaml|json]
+#        - /Library/Application Support/bitranox/Lib Shopify GraphQL/config.d/*.[toml|yaml|json]
+#   - User-level config (Linux):
+#        - ~/.config/lib-shopify-graphql/config.[toml|yaml|json]
+#        - ~/.config/lib-shopify-graphql/config.d/*.[toml|yaml|json]
+#   - User-level config (macOS):
+#        - ~/Library/Application Support/bitranox/Lib Shopify GraphQL/config.[toml|yaml|json]
+#   - .env files: .env in current directory or parent directories
+#   - Environment variables: Prefix with LIB_SHOPIFY_GRAPHQL___
+#
+# Precedence (lowest to highest): defaults -> app -> host -> user -> dotenv -> env
+#
+# IMPORTANT: Naming Conventions for .env Files vs Environment Variables
+# ----------------------------------------------------------------------
+#
+# .env FILES (no prefix needed):
+#   Format: SECTION__KEY=value
+#   Uses double underscore (__) to create nested structures.
+#
+#   Examples in .env file:
+#     SHOPIFY__SHOP_URL=mystore.myshopify.com
+#     SHOPIFY__CLIENT_ID=your_client_id
+#     SHOPIFY__CLIENT_SECRET=your_client_secret
+#
+# ENVIRONMENT VARIABLES (require prefix):
+#   Format: LIB_SHOPIFY_GRAPHQL___SECTION__KEY=value
+#   Uses triple underscore (___) to separate PREFIX from SECTION,
+#   and double underscore (__) to separate SECTION from KEY.
+#
+#   Examples as environment variables:
+#     export LIB_SHOPIFY_GRAPHQL___SHOPIFY__SHOP_URL=mystore.myshopify.com
+#     export LIB_SHOPIFY_GRAPHQL___SHOPIFY__CLIENT_ID=your_client_id
+#
+# Value coercion: "true"/"false" -> bool, "null"/"none" -> None, numbers -> int/float
+#
+# NOTE: In comments below, both formats are shown:
+#   .env:    SECTION__KEY (for .env files)
+#   Shell:   LIB_SHOPIFY_GRAPHQL___SECTION__KEY (for shell/CI environments)
+#
+# Configuration sections are in defaultconfig.d/:
+#   10-logging.toml      - lib_log_rich logging configuration
+#   20-shopify.toml      - Shopify API credentials and settings
+#   30-mysql.toml        - Shared MySQL database configuration
+#   40-token-cache.toml  - OAuth token caching settings
+#   50-sku-cache.toml    - SKU-to-GID cache settings
+#   60-graphql.toml      - GraphQL query limits (images, variants, metafields)

@@ -1,0 +1,69 @@
+# ==============================================================================
+# SKU Cache Configuration
+# ==============================================================================
+#
+# SKU-to-GID (variant ID) mappings can be cached to reduce API calls.
+# When updating variants by SKU, the library first resolves SKU -> GID.
+# Caching avoids repeated GraphQL lookups.
+#
+# Benefits:
+#   - Faster bulk updates (SKU resolution is cached)
+#   - Reduced API rate limit usage
+#   - Works across process restarts
+#
+[shopify.sku_cache]
+# Enable SKU caching
+# When enabled, SKU-to-GID mappings are cached and reused
+# .env:   SHOPIFY__SKU_CACHE__ENABLED
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__SKU_CACHE__ENABLED
+enabled = true
+
+# Cache backend: "json" or "mysql"
+# - json: File-based with filelock (good for single machine or network shares)
+# - mysql: Database-backed (good for distributed/multi-machine setups)
+# .env:   SHOPIFY__SKU_CACHE__BACKEND
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__SKU_CACHE__BACKEND
+backend = "json"
+
+# Cache TTL in seconds (default: 30 days = 2592000 seconds)
+# SKU-to-GID mappings rarely change, so longer TTL is safe
+# Set to 0 for no expiration
+# .env:   SHOPIFY__SKU_CACHE__TTL
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__SKU_CACHE__TTL
+ttl = 2592000
+
+# JSON backend settings
+# ----------------------
+# Path to the JSON cache file
+# Supports network shares with filelock for concurrent access
+#
+# Default paths by operating system (when empty):
+#   Linux:   ~/.cache/lib-shopify-graphql/sku_cache.json
+#   macOS:   ~/Library/Caches/lib-shopify-graphql/sku_cache.json
+#   Windows: %LOCALAPPDATA%\lib-shopify-graphql\sku_cache.json
+#
+# Set explicitly to override the default:
+#   json_path = "/custom/path/sku_cache.json"
+#
+# .env:   SHOPIFY__SKU_CACHE__JSON_PATH
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__SKU_CACHE__JSON_PATH
+json_path = ""
+
+# Lock timeout in seconds (for filelock)
+# Increase for slow network shares
+# .env:   SHOPIFY__SKU_CACHE__LOCK_TIMEOUT
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__SKU_CACHE__LOCK_TIMEOUT
+lock_timeout = 10.0
+
+# MySQL backend settings
+# ----------------------
+# Uses [shopify.mysql.connection] if not specified here
+# .env:   SHOPIFY__SKU_CACHE__MYSQL_CONNECTION
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__SKU_CACHE__MYSQL_CONNECTION
+mysql_connection = ""
+
+# Table name for SKU cache entries (created automatically)
+# Default: sku_cache
+# .env:   SHOPIFY__SKU_CACHE__MYSQL_TABLE
+# Shell:  LIB_SHOPIFY_GRAPHQL___SHOPIFY__SKU_CACHE__MYSQL_TABLE
+mysql_table = "sku_cache"

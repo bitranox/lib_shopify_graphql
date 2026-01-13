@@ -1,0 +1,81 @@
+{
+  "output_version": {
+    "command": "zpool list",
+    "vers_major": 0,
+    "vers_minor": 1
+  },
+  "pools": {
+    "rpool": {
+      "name": "rpool",
+      "type": "POOL",
+      "state": "ONLINE",
+      "pool_guid": "17068583395379267683",
+      "txg": "2888298",
+      "spa_version": "5000",
+      "zpl_version": "5",
+      "properties": {
+        "health": {
+          "value": "ONLINE",
+          "source": {
+            "type": "NONE",
+            "data": "-"
+          }
+        }
+      }
+    },
+    "zpool-hdd": {
+      "name": "zpool-hdd",
+      "type": "POOL",
+      "state": "ONLINE",
+      "pool_guid": "13321006569551940811",
+      "txg": "2697423",
+      "spa_version": "5000",
+      "zpl_version": "5",
+      "properties": {
+        "health": {
+          "value": "ONLINE",
+          "source": {
+            "type": "NONE",
+            "data": "-"
+          }
+        }
+      }
+    },
+    "zpool-nvme": {
+      "name": "zpool-nvme",
+      "type": "POOL",
+      "state": "ONLINE",
+      "pool_guid": "17744074474903330142",
+      "txg": "2690265",
+      "spa_version": "5000",
+      "zpl_version": "5",
+      "properties": {
+        "health": {
+          "value": "ONLINE",
+          "source": {
+            "type": "NONE",
+            "data": "-"
+          }
+        }
+      }
+    },
+    "zpool-ssd": {
+      "name": "zpool-ssd",
+      "type": "POOL",
+      "state": "ONLINE",
+      "pool_guid": "7050059699569218323",
+      "txg": "2709080",
+      "spa_version": "5000",
+      "zpl_version": "5",
+      "properties": {
+        "health": {
+          "value": "ONLINE",
+          "source": {
+            "type": "NONE",
+            "data": "-"
+          }
+        }
+      }
+    }
+  }
+}
