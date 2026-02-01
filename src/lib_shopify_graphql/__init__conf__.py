@@ -24,7 +24,7 @@ name = "lib_shopify_graphql"
 #: Human-readable summary shown in CLI help output.
 title = "Python library for Shopify GraphQL API interactions"
 #: Current release version pulled from ``pyproject.toml`` by automation.
-version = "2.0.0"
+version = "2.0.1"
 #: Repository homepage presented to users.
 homepage = "https://github.com/bitranox/lib_shopify_graphql"
 #: Author attribution surfaced in CLI output.

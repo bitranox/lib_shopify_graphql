@@ -4,6 +4,12 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [2.0.1] - 2026-02-01
+
+### Added
+- `local_only` pytest marker to skip integration tests in CI environments (when `CI=true` or `CI=1`)
+- All integration test classes now marked with both `@pytest.mark.integration` and `@pytest.mark.local_only`
+
 ## [2.0.0] - 2026-01-13
 
 ### Changed
