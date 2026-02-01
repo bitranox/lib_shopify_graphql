@@ -50,6 +50,7 @@ if TYPE_CHECKING:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestProductRead:
     """Integration tests for reading products."""
 
@@ -114,6 +115,7 @@ class TestProductRead:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestProductListing:
     """Integration tests for product listing with pagination."""
 
@@ -181,6 +183,7 @@ class TestProductListing:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestIterProducts:
     """Integration tests for iter_products iterator."""
 
@@ -236,6 +239,7 @@ class TestIterProducts:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestListProductsPaginated:
     """Integration tests for list_products_paginated (manual pagination)."""
 
@@ -318,6 +322,7 @@ class TestListProductsPaginated:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestProductUpdate:
     """Integration tests for updating products."""
 
@@ -376,6 +381,7 @@ class TestProductUpdate:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestVariantUpdate:
     """Integration tests for updating variants."""
 
@@ -423,6 +429,7 @@ class TestVariantUpdate:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestInventory:
     """Integration tests for inventory operations."""
 
@@ -519,6 +526,7 @@ class TestInventory:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestSKUCacheRebuild:
     """Integration tests for SKU cache rebuild operations."""
 
@@ -627,6 +635,7 @@ class TestSKUCacheRebuild:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestTokenCache:
     """Integration tests for token cache operations."""
 
@@ -797,6 +806,7 @@ class TestTokenCache:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestImageOperations:
     """Integration tests for product image operations."""
 
@@ -969,6 +979,7 @@ class TestImageOperations:
 
 
 @pytest.mark.integration
+@pytest.mark.local_only
 class TestCLICommands:
     """Integration tests for CLI commands."""
 

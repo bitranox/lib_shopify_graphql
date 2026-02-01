@@ -5,12 +5,12 @@ description = "Python library for Shopify GraphQL API interactions"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "rich-click>=1.9.5",
-    "lib_cli_exit_tools>=2.2.3",
-    "lib_log_rich>=6.2.0",
-    "lib_layered_config>=5.2.0",
+    "rich-click>=1.9.7",
+    "lib_cli_exit_tools>=2.2.4",
+    "lib_log_rich>=6.3.1",
+    "lib_layered_config>=5.4.0",
     "filelock>=3.20.3",
-    "orjson>=3.11.5",
+    "orjson>=3.11.6",
     "httpx>=0.28.1",
     "pydantic>=2.12.5",
 ]
@@ -39,14 +39,14 @@ Issues = "https://github.com/bitranox/lib_shopify_graphql/issues"
 dev = [
   "pytest>=9.0.2",
   "pytest-cov>=7.0.0",
-  "ruff>=0.14.11",
+  "ruff>=0.14.14",
   "pyright[nodejs]>=1.1.408",
-  "bandit>=1.9.2",
+  "bandit>=1.9.3",
   "build>=1.4.0",
   "twine>=6.2.0",
   "codecov-cli>=11.2.6",
   "pip-audit>=2.10.0",
-  "textual>=7.2.0",
+  "textual>=7.5.0",
   "import-linter>=2.9",
   "rtoml>=0.13.0",
 ]

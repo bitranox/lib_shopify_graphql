@@ -1,7 +1,8 @@
 """Shared pytest fixtures and markers for the test suite.
 
 Provides centralized test infrastructure including:
-- OS-specific markers (os_agnostic, posix_only, windows_only, macos_only)
+- OS-specific markers (os_agnostic, posix_only, windows_only, macos_only, linux_only)
+- Environment markers (local_only - skipped in CI environments)
 - CLI test fixtures (cli_runner, strip_ansi)
 - Configuration isolation fixtures (isolated_traceback_config, preserve_traceback_state)
 - Real test adapters for behavioral testing (InMemoryCache, FakeGraphQLClient)
@@ -55,6 +56,9 @@ from lib_shopify_graphql.models import (  # noqa: E402
 
 ANSI_ESCAPE_PATTERN = re.compile(r"\x1B\[[0-?]*[ -/]*[@-~]")
 CONFIG_FIELDS: tuple[str, ...] = tuple(field.name for field in fields(type(lib_cli_exit_tools.config)))
+
+# Detect CI environment (used for local_only marker and MySQL tests)
+_CI_ENVIRONMENT = os.environ.get("CI") in ("true", "1")
 
 
 # =============================================================================
@@ -411,16 +415,17 @@ def fake_session() -> FakeSession:
 
 
 def pytest_configure(config: pytest.Config) -> None:
-    """Register custom markers for OS-specific test categorization."""
+    """Register custom markers for OS-specific and environment test categorization."""
     config.addinivalue_line("markers", "os_agnostic: test runs on all platforms")
     config.addinivalue_line("markers", "posix_only: test runs only on POSIX systems (Linux, macOS)")
     config.addinivalue_line("markers", "windows_only: test runs only on Windows")
     config.addinivalue_line("markers", "macos_only: test runs only on macOS")
     config.addinivalue_line("markers", "linux_only: test runs only on Linux")
+    config.addinivalue_line("markers", "local_only: test runs only locally (skipped in CI environments)")
 
 
 def pytest_runtest_setup(item: pytest.Item) -> None:
-    """Skip tests based on OS markers when running on incompatible platforms."""
+    """Skip tests based on OS/environment markers when running on incompatible platforms."""
     if item.get_closest_marker("windows_only") and sys.platform != "win32":
         pytest.skip("test requires Windows")
     if item.get_closest_marker("posix_only") and sys.platform == "win32":
@@ -429,6 +434,8 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         pytest.skip("test requires macOS")
     if item.get_closest_marker("linux_only") and sys.platform != "linux":
         pytest.skip("test requires Linux")
+    if item.get_closest_marker("local_only") and _CI_ENVIRONMENT:
+        pytest.skip("test runs only locally (skipped in CI)")
 
 
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
@@ -956,9 +963,6 @@ def test_product(integration_session: Any, primary_location: str) -> Iterator[Pr
 # =============================================================================
 # MySQL Integration Test Fixtures
 # =============================================================================
-
-# Detect CI environment (skip MySQL tests in CI)
-_CI_ENVIRONMENT = os.environ.get("CI") in ("true", "1")
 
 
 @dataclass
