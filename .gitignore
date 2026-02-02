@@ -186,5 +186,5 @@ AGENTS.md
 .claude/
 
 # DIV
-.devcontainer/
+# .devcontainer/ # needed for github codespaces
 LLM-CONTEXT/
