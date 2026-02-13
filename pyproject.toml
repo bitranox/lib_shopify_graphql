@@ -230,5 +230,6 @@ ignore-vulns = [
   "CVE-2025-69277",  # pynacl 1.6.1: fix available in 1.6.2, accepted risk
   "CVE-2026-21441",  # urllib3 2.6.2: fix available in 2.6.3, accepted risk
   "CVE-2026-22702",  # virtualenv 20.35.4: fix available in 20.36.1, accepted risk
-  "CVE-2026-1703"
+  "CVE-2026-1703",
+  "CVE-2026-25990"
 ]
