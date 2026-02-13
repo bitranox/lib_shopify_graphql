@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [2.0.2] - 2026-02-13
+
+### Changed
+- Updated CI/CD workflows (GitHub Actions metadata extraction, macOS bash 4+ support)
+- Restored devcontainer configuration
+
+### Fixed
+- Added CVE ignore entries for CVE-2026-1703, CVE-2026-25990, CVE-2026-26007 in pip-audit
+- Updated .gitignore to not exclude .devcontainer directory
+
 ## [2.0.1] - 2026-02-01
 
 ### Added
