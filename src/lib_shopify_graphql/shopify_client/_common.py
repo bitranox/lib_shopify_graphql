@@ -9,7 +9,7 @@ from __future__ import annotations
 import logging
 import threading
 from functools import lru_cache
-from typing import TYPE_CHECKING, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 if TYPE_CHECKING:
     from ..application.ports import (
@@ -20,7 +20,8 @@ if TYPE_CHECKING:
     )
     from ._session import ShopifySession
 
-from ..exceptions import VariantNotFoundError
+from ..adapters.parsers import format_graphql_errors, parse_graphql_errors
+from ..exceptions import GraphQLError, VariantNotFoundError
 
 logger = logging.getLogger(__name__)
 
@@ -81,6 +82,26 @@ def _get_default_session_manager() -> SessionManagerPort:
 def _get_default_graphql_client() -> GraphQLClientPort:
     """Get the default GraphQL client with proper type."""
     return _ensure_adapters_cache()["graphql_client"]
+
+
+def _check_graphql_errors(data: dict[str, Any], query: str) -> None:
+    """Check for GraphQL errors in response data and raise if present.
+
+    Args:
+        data: Raw GraphQL response dict.
+        query: The query/mutation string (for error context).
+
+    Raises:
+        GraphQLError: If the response contains GraphQL errors.
+    """
+    if "errors" not in data:
+        return
+    parsed_errors = parse_graphql_errors(data["errors"])
+    raise GraphQLError(
+        f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
+        errors=parsed_errors,
+        query=query,
+    )
 
 
 @lru_cache(maxsize=_GID_CACHE_SIZE)
@@ -193,6 +214,7 @@ def _get_session_sku_resolver(
 
 
 __all__ = [
+    "_check_graphql_errors",
     "_ensure_adapters_cache",
     "_get_default_graphql_client",
     "_get_default_session_manager",

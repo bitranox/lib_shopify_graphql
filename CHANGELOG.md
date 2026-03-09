@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [2.0.4] - 2026-03-09
+
+### Changed
+- Extracted `_check_graphql_errors()` helper to `shopify_client/_common.py`, replacing duplicate error-checking across 6 modules
+- Inlined 6 trivial wrapper functions that only delegated to `_check_graphql_errors()`
+- Added `shopify_session()` context manager to `cli/_common.py`, consolidating login/logout boilerplate across 4 CLI modules
+- Split `adapters/parsers.py` (1112 lines) into 5 focused submodules: `_errors`, `_truncation`, `_products`, `_input_builders`, `_mutations`
+- Added `@lru_cache` to `get_default_cache_dir()` to avoid redundant platform detection
+- Updated CLAUDE.md: removed stale `scripts/` references, updated CLI package structure, replaced `test-slow` with `testintegration`
+
+### Removed
+- Removed stale `tests/zpool_list_ok_sample.json` fixture from unrelated project
+
+### Fixed
+- README CI badge now points to correct workflow (`default_cicd_public.yml`)
+
 ## [2.0.3] - 2026-03-09
 
 ### Changed
@@ -63,6 +79,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Removed duplicate StrEnum compatibility shims (consolidated to `_compat.py`)
 
 ## [Unreleased]
+
+## [2.0.4] 2026-03-09 13:03:28
 
 ## [2.0.3] 2026-03-09 11:52:50
 

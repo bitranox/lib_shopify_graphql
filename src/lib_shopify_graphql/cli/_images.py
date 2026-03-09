@@ -23,12 +23,10 @@ from ..models import ImageReorderResult, ImageSource, ImageUpdate
 from ..shopify_client import (
     create_image,
     delete_image,
-    login,
-    logout,
     reorder_images,
     update_image,
 )
-from ._common import CLICK_CONTEXT_SETTINGS, EnumChoice, get_effective_config_and_profile
+from ._common import CLICK_CONTEXT_SETTINGS, EnumChoice, get_effective_config_and_profile, shopify_session
 
 if TYPE_CHECKING:
     from ..shopify_client import ShopifySession
@@ -144,12 +142,11 @@ def register_image_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            session = None
             try:
-                session = login(credentials)
-                results = _create_images_from_sources(session, product_id, urls, files, alt)
-                logger.info(f"Images added: {len(results)} image(s)")
-                _output_add_image_results(results, output_format)
+                with shopify_session(credentials) as session:
+                    results = _create_images_from_sources(session, product_id, urls, files, alt)
+                    logger.info(f"Images added: {len(results)} image(s)")
+                    _output_add_image_results(results, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1)
@@ -157,9 +154,6 @@ def register_image_commands(
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
     @cli_group.command("delete-image", context_settings=CLICK_CONTEXT_SETTINGS)
     @click.argument("product_id", type=str)
@@ -203,22 +197,21 @@ def register_image_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            session = None
             try:
-                session = login(credentials)
-                result = delete_image(session, product_id, image_id)
-                deleted_ids = result.deleted_image_ids + result.deleted_media_ids
-                logger.info(f"Image deleted: {deleted_ids}")
+                with shopify_session(credentials) as session:
+                    result = delete_image(session, product_id, image_id)
+                    deleted_ids = result.deleted_image_ids + result.deleted_media_ids
+                    logger.info(f"Image deleted: {deleted_ids}")
 
-                if output_format == OutputFormat.JSON:
-                    data = {
-                        "product_id": result.product_id,
-                        "deleted_image_ids": result.deleted_image_ids,
-                        "deleted_media_ids": result.deleted_media_ids,
-                    }
-                    click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
-                else:
-                    click.echo(f"✓ Image deleted from product {result.product_id}")
+                    if output_format == OutputFormat.JSON:
+                        data = {
+                            "product_id": result.product_id,
+                            "deleted_image_ids": result.deleted_image_ids,
+                            "deleted_media_ids": result.deleted_media_ids,
+                        }
+                        click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
+                    else:
+                        click.echo(f"✓ Image deleted from product {result.product_id}")
 
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
@@ -227,9 +220,6 @@ def register_image_commands(
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
     @cli_group.command("update-image", context_settings=CLICK_CONTEXT_SETTINGS)
     @click.argument("product_id", type=str)
@@ -273,24 +263,23 @@ def register_image_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            session = None
             try:
-                session = login(credentials)
-                image_update = ImageUpdate(alt_text=alt)
-                result = update_image(session, product_id, image_id, image_update)
-                logger.info(f"Image updated: id='{result.image_id}'")
+                with shopify_session(credentials) as session:
+                    image_update = ImageUpdate(alt_text=alt)
+                    result = update_image(session, product_id, image_id, image_update)
+                    logger.info(f"Image updated: id='{result.image_id}'")
 
-                if output_format == OutputFormat.JSON:
-                    data = {
-                        "image_id": result.image_id,
-                        "url": result.url,
-                        "alt_text": result.alt_text,
-                        "status": result.status,
-                    }
-                    click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
-                else:
-                    click.echo(f"✓ Image updated: {result.image_id}")
-                    click.echo(f"  Alt text: {result.alt_text}")
+                    if output_format == OutputFormat.JSON:
+                        data = {
+                            "image_id": result.image_id,
+                            "url": result.url,
+                            "alt_text": result.alt_text,
+                            "status": result.status,
+                        }
+                        click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
+                    else:
+                        click.echo(f"✓ Image updated: {result.image_id}")
+                        click.echo(f"  Alt text: {result.alt_text}")
 
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
@@ -299,9 +288,6 @@ def register_image_commands(
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
     @cli_group.command("reorder-images", context_settings=CLICK_CONTEXT_SETTINGS)
     @click.argument("product_id", type=str)
@@ -336,12 +322,11 @@ def register_image_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            session = None
             try:
-                session = login(credentials)
-                result = reorder_images(session, product_id, image_ids)
-                logger.info(f"Images reordered for product '{result.product_id}' (job_id='{result.job_id}')")
-                _output_reorder_result(result, output_format)
+                with shopify_session(credentials) as session:
+                    result = reorder_images(session, product_id, image_ids)
+                    logger.info(f"Images reordered for product '{result.product_id}' (job_id='{result.job_id}')")
+                    _output_reorder_result(result, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1)
@@ -349,9 +334,6 @@ def register_image_commands(
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
 
 __all__ = [

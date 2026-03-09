@@ -6,19 +6,14 @@ This module provides metafield deletion functionality.
 from __future__ import annotations
 
 import logging
-from typing import Any
 
 from pydantic import BaseModel, ConfigDict, Field
 
 from ..adapters.mutations import METAFIELDS_DELETE_MUTATION
-from ..adapters.parsers import (
-    format_graphql_errors,
-    parse_graphql_errors,
-)
 from ..exceptions import GraphQLError, SessionNotActiveError
 from ..models import MetafieldDeleteFailure, MetafieldDeleteResult, MetafieldIdentifier
 from ..models._operations import UserErrorData
-from ._common import _normalize_owner_gid
+from ._common import _check_graphql_errors, _normalize_owner_gid
 from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
@@ -124,18 +119,6 @@ def _find_identifier_for_error(
         if 0 <= idx < len(metafields):
             return metafields[idx]
     return None
-
-
-def _check_metafields_graphql_errors(data: dict[str, Any]) -> None:
-    """Check for GraphQL-level errors in metafield deletion response."""
-    if "errors" not in data:
-        return
-    parsed_errors = parse_graphql_errors(data["errors"])
-    raise GraphQLError(
-        f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-        errors=parsed_errors,
-        query=METAFIELDS_DELETE_MUTATION,
-    )
 
 
 def _create_unknown_identifier() -> MetafieldIdentifier:
@@ -280,7 +263,7 @@ def delete_metafields(
             variables={"metafields": mutation_input},
         )
 
-        _check_metafields_graphql_errors(raw_data)
+        _check_graphql_errors(raw_data, METAFIELDS_DELETE_MUTATION)
 
         # Parse response with Pydantic model for typed access
         response = _MetafieldsDeleteResponse.model_validate(raw_data)

@@ -17,7 +17,7 @@ from ..adapters.parsers import get_truncation_info
 from ..adapters.queries import PRODUCTS_LIST_QUERY, get_limits_from_config
 from ..exceptions import AuthenticationError, GraphQLError
 from ..shopify_client import ShopifySession
-from ._common import CLICK_CONTEXT_SETTINGS, get_effective_config_and_profile
+from ._common import CLICK_CONTEXT_SETTINGS, get_effective_config_and_profile, shopify_session
 
 if TYPE_CHECKING:
     from ..models._operations import TruncationInfo
@@ -300,54 +300,47 @@ def register_test_limits_command(
         extra = {"command": "test-limits", "profile": effective_profile, "limit": limit}
 
         with lib_log_rich.runtime.bind(job_id="cli-test-limits", extra=extra):
-            # Late import to allow tests to patch cli.login/logout
-            from . import login, logout
-
             credentials = get_credentials_or_exit(config)
             limits = get_limits_from_config()
 
             _display_current_limits(limits)
 
             click.echo(f"Connecting to {credentials.shop_url}...")
-            session = None
             try:
-                session = login(credentials)
-                click.echo("✓ Connected")
-                click.echo()
-
-                click.echo(f"Analyzing {'up to ' + str(limit) if limit else 'all'} products...")
-                if query:
-                    click.echo(f"  Filter: {query}")
-
-                analysis = _analyze_products(session, limits, query, limit)
-
-                if analysis.total_products == 0:
-                    click.echo("No products found.")
-                    return
-
-                click.echo(f"✓ Analyzed {analysis.total_products} products")
-                click.echo()
-
-                _display_max_values(analysis, limits)
-
-                if not analysis.truncation_issues:
-                    click.echo("✓ No truncation detected!")
+                with shopify_session(credentials) as session:
+                    click.echo("✓ Connected")
                     click.echo()
-                    click.echo("All products returned complete data.")
-                    click.echo("Your current configuration is sufficient for this catalog.")
-                else:
-                    field_summary = _display_truncation_issues(analysis.truncation_issues)
-                    _display_recommendations(field_summary, analysis.truncation_issues, limits)
-                    logger.warning(f"Truncation detected in {len(analysis.truncation_issues)} product(s)")
-                    raise SystemExit(1)
+
+                    click.echo(f"Analyzing {'up to ' + str(limit) if limit else 'all'} products...")
+                    if query:
+                        click.echo(f"  Filter: {query}")
+
+                    analysis = _analyze_products(session, limits, query, limit)
+
+                    if analysis.total_products == 0:
+                        click.echo("No products found.")
+                        return
+
+                    click.echo(f"✓ Analyzed {analysis.total_products} products")
+                    click.echo()
+
+                    _display_max_values(analysis, limits)
+
+                    if not analysis.truncation_issues:
+                        click.echo("✓ No truncation detected!")
+                        click.echo()
+                        click.echo("All products returned complete data.")
+                        click.echo("Your current configuration is sufficient for this catalog.")
+                    else:
+                        field_summary = _display_truncation_issues(analysis.truncation_issues)
+                        _display_recommendations(field_summary, analysis.truncation_issues, limits)
+                        logger.warning(f"Truncation detected in {len(analysis.truncation_issues)} product(s)")
+                        raise SystemExit(1)
 
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"\n✗ Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
 
 __all__ = [

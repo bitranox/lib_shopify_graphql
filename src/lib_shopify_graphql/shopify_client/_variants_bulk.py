@@ -14,14 +14,12 @@ if TYPE_CHECKING:
 from ..adapters.mutations import PRODUCT_VARIANTS_BULK_UPDATE_MUTATION
 from ..adapters.parsers import (
     build_variant_input,
-    format_graphql_errors,
-    parse_graphql_errors,
     parse_variant_from_mutation,
 )
 from ..exceptions import GraphQLError, SessionNotActiveError, VariantNotFoundError
 from ..models import BulkUpdateResult, UpdateFailure, UpdateSuccess, VariantUpdateRequest
 from ..models._operations import UserErrorData, VariantMutationResult, VariantsBulkUpdateResponse
-from ._common import _get_session_sku_resolver, _normalize_product_gid, _normalize_variant_gid, _resolve_variant_identifier
+from ._common import _check_graphql_errors, _get_session_sku_resolver, _normalize_product_gid, _normalize_variant_gid, _resolve_variant_identifier
 from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
@@ -140,18 +138,6 @@ def _process_mutation_successes(
     return succeeded
 
 
-def _check_bulk_graphql_errors(data: dict[str, Any]) -> None:
-    """Check for GraphQL errors in bulk update response."""
-    if "errors" not in data:
-        return
-    parsed_errors = parse_graphql_errors(data["errors"])
-    raise GraphQLError(
-        f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-        errors=parsed_errors,
-        query=PRODUCT_VARIANTS_BULK_UPDATE_MUTATION,
-    )
-
-
 def _update_sku_cache_for_successes(
     sku_resolver: SKUResolverPort,
     succeeded: list[UpdateSuccess],
@@ -207,7 +193,7 @@ def update_variants_bulk(
             variables={"productId": product_gid, "variants": variant_inputs},
         )
 
-        _check_bulk_graphql_errors(raw_data)
+        _check_graphql_errors(raw_data, PRODUCT_VARIANTS_BULK_UPDATE_MUTATION)
 
         response = VariantsBulkUpdateResponse.model_validate(raw_data)
         mutation_data = response.mutation_data

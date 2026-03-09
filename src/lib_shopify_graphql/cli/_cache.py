@@ -28,8 +28,6 @@ from ..enums import CacheBackend
 from ..exceptions import AuthenticationError, GraphQLError
 from ..shopify_client import (
     cache_clear_all,
-    login,
-    logout,
     skucache_check,
     skucache_clear,
     skucache_rebuild,
@@ -42,6 +40,7 @@ from ._common import (
     TokenCacheConfig,
     exit_sku_cache_not_configured,
     get_effective_config_and_profile,
+    shopify_session,
 )
 
 logger = logging.getLogger(__name__)
@@ -455,34 +454,30 @@ def register_cache_commands(
 
             # Login and rebuild
             click.echo(f"Connecting to {credentials.shop_url}...")
-            session = None
             try:
-                session = login(credentials)
-                click.echo("✓ Connected")
+                with shopify_session(credentials) as session:
+                    click.echo("✓ Connected")
 
-                # Create SKU resolver with the cache
-                sku_resolver = CachedSKUResolver(sku_cache, session._graphql_client)
+                    # Create SKU resolver with the cache
+                    sku_resolver = CachedSKUResolver(sku_cache, session._graphql_client)
 
-                click.echo("Rebuilding SKU cache (this may take a while)...")
-                if query:
-                    click.echo(f"  Filter: {query}")
+                    click.echo("Rebuilding SKU cache (this may take a while)...")
+                    if query:
+                        click.echo(f"  Filter: {query}")
 
-                total_variants = skucache_rebuild(
-                    session,
-                    sku_resolver=sku_resolver,
-                    query=query,
-                )
+                    total_variants = skucache_rebuild(
+                        session,
+                        sku_resolver=sku_resolver,
+                        query=query,
+                    )
 
-                click.echo(f"✓ Cache rebuilt: {total_variants} variants cached")
-                logger.info(f"Cache rebuild complete: {total_variants} variants cached")
+                    click.echo(f"✓ Cache rebuilt: {total_variants} variants cached")
+                    logger.info(f"Cache rebuild complete: {total_variants} variants cached")
 
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"\n✗ Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
     @cli_group.command("skucache-check", context_settings=CLICK_CONTEXT_SETTINGS)
     @click.option(
@@ -522,40 +517,36 @@ def register_cache_commands(
             credentials = get_credentials_or_exit(config)
 
             click.echo(f"Connecting to {credentials.shop_url}...")
-            session = None
             try:
-                session = login(credentials)
-                click.echo("✓ Connected")
+                with shopify_session(credentials) as session:
+                    click.echo("✓ Connected")
 
-                click.echo("Checking SKU cache consistency (this may take a while)...")
-                if query:
-                    click.echo(f"  Filter: {query}")
+                    click.echo("Checking SKU cache consistency (this may take a while)...")
+                    if query:
+                        click.echo(f"  Filter: {query}")
 
-                result = skucache_check(session, sku_cache, query=query)
+                    result = skucache_check(session, sku_cache, query=query)
 
-                _display_skucache_summary(result, credentials.shop_url)
-                _display_skucache_details(result)
+                    _display_skucache_summary(result, credentials.shop_url)
+                    _display_skucache_details(result)
 
-                click.echo("")
-                if result.is_consistent:
-                    click.echo("✓ Cache is consistent with Shopify")
-                else:
-                    click.echo("✗ Cache has inconsistencies - consider running 'skucache-rebuild'")
+                    click.echo("")
+                    if result.is_consistent:
+                        click.echo("✓ Cache is consistent with Shopify")
+                    else:
+                        click.echo("✗ Cache has inconsistencies - consider running 'skucache-rebuild'")
 
-                logger.info(
-                    f"Cache check complete: {result.valid} valid, {len(result.stale)} stale, {len(result.missing)} missing, {len(result.mismatched)} mismatched"
-                )
+                    logger.info(
+                        f"Cache check complete: {result.valid} valid, {len(result.stale)} stale, {len(result.missing)} missing, {len(result.mismatched)} mismatched"
+                    )
 
-                if not result.is_consistent:
-                    raise SystemExit(1)
+                    if not result.is_consistent:
+                        raise SystemExit(1)
 
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"\n✗ Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
 
 __all__ = [

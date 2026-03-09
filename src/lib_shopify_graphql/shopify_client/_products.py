@@ -48,7 +48,7 @@ from ..models import (
     ProductVariant,
 )
 from ..models._operations import UserErrorData
-from ._common import _get_session_sku_resolver, _normalize_product_gid
+from ._common import _check_graphql_errors, _get_session_sku_resolver, _normalize_product_gid
 from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
@@ -56,13 +56,7 @@ logger = logging.getLogger(__name__)
 
 def _validate_product_response(data: dict[str, Any], product_id: str) -> dict[str, Any]:
     """Validate GraphQL response and return product data or raise appropriate exception."""
-    if "errors" in data:
-        parsed_errors = parse_graphql_errors(data["errors"])
-        raise GraphQLError(
-            f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-            errors=parsed_errors,
-            query=PRODUCT_QUERY,
-        )
+    _check_graphql_errors(data, PRODUCT_QUERY)
     product_data = data.get("data", {}).get("product")
     if product_data is None:
         raise ProductNotFoundError(product_id)
@@ -135,18 +129,6 @@ def _build_list_variables(first: int, after: str | None, query: str | None) -> d
     return variables
 
 
-def _check_list_errors(data: dict[str, Any]) -> None:
-    """Check for and raise GraphQL errors from list response."""
-    if "errors" not in data:
-        return
-    parsed_errors = parse_graphql_errors(data["errors"])
-    raise GraphQLError(
-        f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-        errors=parsed_errors,
-        query=PRODUCTS_LIST_QUERY,
-    )
-
-
 def _update_sku_cache_from_products(
     sku_resolver: SKUResolverPort,
     products: list[Product],
@@ -202,7 +184,7 @@ def list_products_paginated(
 
     try:
         data = session.execute_graphql(PRODUCTS_LIST_QUERY, variables=variables)
-        _check_list_errors(data)
+        _check_graphql_errors(data, PRODUCTS_LIST_QUERY)
 
         products_data = data.get("data", {}).get("products")
         if products_data is None:
@@ -579,18 +561,6 @@ def skucache_rebuild(
 # =============================================================================
 
 
-def _check_create_graphql_errors(data: dict[str, Any]) -> None:
-    """Check for GraphQL errors in create response."""
-    if "errors" not in data:
-        return
-    parsed_errors = parse_graphql_errors(data["errors"])
-    raise GraphQLError(
-        f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-        errors=parsed_errors,
-        query=PRODUCT_CREATE_MUTATION,
-    )
-
-
 def _check_create_user_errors(user_errors: list[UserErrorData]) -> None:
     """Check for user errors in create response."""
     if not user_errors:
@@ -630,7 +600,7 @@ def create_product(
         product_input = build_product_create_input(product)
         data = session.execute_graphql(PRODUCT_CREATE_MUTATION, variables={"input": product_input})
 
-        _check_create_graphql_errors(data)
+        _check_graphql_errors(data, PRODUCT_CREATE_MUTATION)
 
         result = data.get("data", {}).get("productCreate", {})
         raw_user_errors = result.get("userErrors", [])

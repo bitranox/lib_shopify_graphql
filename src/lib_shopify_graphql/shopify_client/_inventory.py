@@ -16,14 +16,10 @@ from ..adapters.mutations import (
     INVENTORY_SET_QUANTITIES_MUTATION,
     VARIANT_INVENTORY_ITEM_QUERY,
 )
-from ..adapters.parsers import (
-    format_graphql_errors,
-    parse_graphql_errors,
-)
 from ..exceptions import GraphQLError, SessionNotActiveError, VariantNotFoundError
 from ..models import InventoryLevel, InventoryQuantityName, InventoryReason
 from ..models._operations import UserErrorData
-from ._common import _get_session_sku_resolver, _resolve_variant_identifier
+from ._common import _check_graphql_errors, _get_session_sku_resolver, _resolve_variant_identifier
 from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
@@ -64,18 +60,6 @@ def _resolve_location(
     if location_id:
         return location_id if location_id.startswith("gid://") else f"gid://shopify/Location/{location_id}"
     raise ValueError("No location_id provided and no location_resolver configured")
-
-
-def _check_inventory_graphql_errors(data: dict[str, Any], query: str) -> None:
-    """Check for GraphQL-level errors in inventory response."""
-    if "errors" not in data:
-        return
-    parsed_errors = parse_graphql_errors(data["errors"])
-    raise GraphQLError(
-        f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-        errors=parsed_errors,
-        query=query,
-    )
 
 
 def _check_inventory_user_errors(user_errors: list[UserErrorData], query: str, operation: str) -> None:
@@ -198,7 +182,7 @@ def set_inventory(
         input_data = _build_set_quantities_input(inventory_item_id, resolved_location, quantity, reason)
         data = session.execute_graphql(INVENTORY_SET_QUANTITIES_MUTATION, variables={"input": input_data})
 
-        _check_inventory_graphql_errors(data, INVENTORY_SET_QUANTITIES_MUTATION)
+        _check_graphql_errors(data, INVENTORY_SET_QUANTITIES_MUTATION)
         mutation_data = data.get("data", {}).get("inventorySetQuantities", {})
         raw_user_errors = mutation_data.get("userErrors", [])
         parsed_user_errors = [UserErrorData.model_validate(e) for e in raw_user_errors]
@@ -271,7 +255,7 @@ def adjust_inventory(
         input_data = _build_adjust_quantities_input(inventory_item_id, resolved_location, delta, reason)
         data = session.execute_graphql(INVENTORY_ADJUST_QUANTITIES_MUTATION, variables={"input": input_data})
 
-        _check_inventory_graphql_errors(data, INVENTORY_ADJUST_QUANTITIES_MUTATION)
+        _check_graphql_errors(data, INVENTORY_ADJUST_QUANTITIES_MUTATION)
         mutation_data = data.get("data", {}).get("inventoryAdjustQuantities", {})
         raw_user_errors = mutation_data.get("userErrors", [])
         parsed_user_errors = [UserErrorData.model_validate(e) for e in raw_user_errors]

@@ -11,6 +11,8 @@ This module contains shared components used across CLI commands:
 from __future__ import annotations
 
 import logging
+from collections.abc import Iterator
+from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
 from typing import TYPE_CHECKING, Final, Generic, NoReturn, TypeVar
@@ -22,6 +24,9 @@ from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
     from collections.abc import Sequence
+
+    from ..models import ShopifyCredentials
+    from ..shopify_client import ShopifySession
 
 from .. import __init__conf__
 from ..config import get_config
@@ -323,6 +328,33 @@ def run_cli(cli_group: click.Group, argv: Sequence[str] | None) -> int:
 
 
 # =============================================================================
+# Session Helpers
+# =============================================================================
+
+
+@contextmanager
+def shopify_session(credentials: ShopifyCredentials) -> Iterator[ShopifySession]:
+    """Context manager for authenticated Shopify sessions.
+
+    Handles login and guaranteed logout on exit (even on exceptions).
+
+    Args:
+        credentials: Shopify store credentials.
+
+    Yields:
+        An active ShopifySession.
+    """
+    from . import login, logout
+
+    session = login(credentials)
+    try:
+        yield session
+    finally:
+        if session.is_active:
+            logout(session)
+
+
+# =============================================================================
 # Exit Helpers
 # =============================================================================
 
@@ -375,6 +407,8 @@ __all__ = [
     "get_effective_profile",
     "get_effective_config_and_profile",
     "get_config_from_context",
+    # Session helpers
+    "shopify_session",
     # CLI execution
     "run_cli",
     # Exit helpers

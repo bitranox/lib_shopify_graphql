@@ -34,11 +34,9 @@ from ..shopify_client import (
     delete_product,
     duplicate_product,
     get_product_by_id,
-    login,
-    logout,
     update_product,
 )
-from ._common import CLICK_CONTEXT_SETTINGS, EnumChoice, get_effective_config_and_profile
+from ._common import CLICK_CONTEXT_SETTINGS, EnumChoice, get_effective_config_and_profile, shopify_session
 
 if TYPE_CHECKING:
     from ..models import ShopifyCredentials
@@ -320,15 +318,11 @@ def _create_sku_resolver_for_delete(
     if sku_cache is None:
         return None
 
-    session_temp = None
     try:
-        session_temp = login(credentials)
-        return CachedSKUResolver(sku_cache, session_temp._graphql_client)
+        with shopify_session(credentials) as session_temp:
+            return CachedSKUResolver(sku_cache, session_temp._graphql_client)
     except Exception:  # nosec B110 - SKU cache clearing is best-effort
         return None
-    finally:
-        if session_temp is not None and session_temp.is_active:
-            logout(session_temp)
 
 
 # =============================================================================
@@ -392,11 +386,10 @@ def register_product_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            session = None
             try:
-                session = login(credentials)
-                product = get_product_by_id(session, product_id)
-                _output_product(product, output_format)
+                with shopify_session(credentials) as session:
+                    product = get_product_by_id(session, product_id)
+                    _output_product(product, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1)
@@ -404,9 +397,6 @@ def register_product_commands(
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
     @cli_group.command("create-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @click.option("--title", type=str, default=None, help="Product title (required if no --json)")
@@ -491,19 +481,15 @@ def register_product_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            session = None
             try:
-                session = login(credentials)
-                product = create_product(session, product_create)
-                logger.info(f"Product created: id='{product.id}'")
-                _output_product(product, output_format)
+                with shopify_session(credentials) as session:
+                    product = create_product(session, product_create)
+                    logger.info(f"Product created: id='{product.id}'")
+                    _output_product(product, output_format)
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
     @cli_group.command("duplicate-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @click.argument("product_id", type=str)
@@ -557,18 +543,17 @@ def register_product_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            session = None
             try:
-                session = login(credentials)
-                result = duplicate_product(
-                    session,
-                    product_id,
-                    new_title,
-                    include_images=not no_images,
-                    new_status=status,
-                )
-                logger.info(f"Product duplicated: original='{result.original_product_id}', new='{result.new_product.id}'")
-                _output_product(result.new_product, output_format)
+                with shopify_session(credentials) as session:
+                    result = duplicate_product(
+                        session,
+                        product_id,
+                        new_title,
+                        include_images=not no_images,
+                        new_status=status,
+                    )
+                    logger.info(f"Product duplicated: original='{result.original_product_id}', new='{result.new_product.id}'")
+                    _output_product(result.new_product, output_format)
             except ProductNotFoundError:
                 click.echo(f"Source product not found: {product_id}", err=True)
                 raise SystemExit(1)
@@ -576,9 +561,6 @@ def register_product_commands(
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
     @cli_group.command("delete-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @click.argument("product_id", type=str)
@@ -618,12 +600,11 @@ def register_product_commands(
 
             sku_resolver = _create_sku_resolver_for_delete(config, credentials, create_sku_cache_from_config)
 
-            session = None
             try:
-                session = login(credentials)
-                result = delete_product(session, product_id, sku_resolver=sku_resolver)
-                logger.info(f"Product deleted: id='{result.deleted_product_id}'")
-                _output_delete_result(result, output_format)
+                with shopify_session(credentials) as session:
+                    result = delete_product(session, product_id, sku_resolver=sku_resolver)
+                    logger.info(f"Product deleted: id='{result.deleted_product_id}'")
+                    _output_delete_result(result, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1)
@@ -631,9 +612,6 @@ def register_product_commands(
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
     @cli_group.command("update-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @click.argument("product_id", type=str)
@@ -721,12 +699,11 @@ def register_product_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            session = None
             try:
-                session = login(credentials)
-                product = update_product(session, product_id, product_update)
-                logger.info(f"Product updated: id='{product.id}'")
-                _output_product(product, output_format)
+                with shopify_session(credentials) as session:
+                    product = update_product(session, product_id, product_update)
+                    logger.info(f"Product updated: id='{product.id}'")
+                    _output_product(product, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1)
@@ -734,9 +711,6 @@ def register_product_commands(
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1)
-            finally:
-                if session is not None and session.is_active:
-                    logout(session)
 
 
 __all__ = [

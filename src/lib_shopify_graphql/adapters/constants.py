@@ -8,6 +8,7 @@ All values can be overridden via configuration (see defaultconfig.toml).
 
 from __future__ import annotations
 
+from functools import lru_cache
 from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
@@ -82,6 +83,7 @@ DEFAULT_CURRENCY_CODE: str = "USD"
 CACHE_APP_NAME: str = "lib-shopify-graphql"
 
 
+@lru_cache(maxsize=1)
 def get_default_cache_dir() -> Path:
     """Get the default cache directory for the current platform.
 

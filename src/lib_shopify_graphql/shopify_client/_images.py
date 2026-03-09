@@ -50,7 +50,7 @@ from ..models import (
     MediaStatus,
     StagedUploadTarget,
 )
-from ._common import _normalize_media_gid, _normalize_product_gid
+from ._common import _check_graphql_errors, _normalize_media_gid, _normalize_product_gid
 from ._session import ShopifySession
 
 # =============================================================================
@@ -489,18 +489,6 @@ def create_images(
     return _create_media_from_sources(session, product_gid, sources)
 
 
-def _check_update_graphql_errors(data: dict[str, Any]) -> None:
-    """Check for GraphQL errors in update response."""
-    if "errors" not in data:
-        return
-    parsed_errors = parse_graphql_errors(data["errors"])
-    raise GraphQLError(
-        f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-        errors=parsed_errors,
-        query=PRODUCT_UPDATE_MEDIA_MUTATION,
-    )
-
-
 def _check_update_media_errors(media_errors: list[_RawMediaUserError], image_gid: str) -> None:
     """Check for media errors in update response."""
     if not media_errors:
@@ -540,7 +528,7 @@ def update_image(
         variables={"productId": product_gid, "media": [media_input]},
     )
 
-    _check_update_graphql_errors(data)
+    _check_graphql_errors(data, PRODUCT_UPDATE_MEDIA_MUTATION)
 
     mutation_data = data.get("data", {}).get("productUpdateMedia", {})
     _check_update_media_errors(mutation_data.get("mediaUserErrors", []), image_gid)
@@ -623,13 +611,7 @@ def delete_images(
         variables={"productId": product_gid, "mediaIds": media_gids},
     )
 
-    if "errors" in data:
-        parsed_errors = parse_graphql_errors(data["errors"])
-        raise GraphQLError(
-            f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-            errors=parsed_errors,
-            query=PRODUCT_DELETE_MEDIA_MUTATION,
-        )
+    _check_graphql_errors(data, PRODUCT_DELETE_MEDIA_MUTATION)
 
     mutation_data = data.get("data", {}).get("productDeleteMedia", {})
     media_errors = mutation_data.get("mediaUserErrors", [])
@@ -691,13 +673,7 @@ def reorder_images(
         variables={"id": product_gid, "moves": moves},
     )
 
-    if "errors" in data:
-        parsed_errors = parse_graphql_errors(data["errors"])
-        raise GraphQLError(
-            f"GraphQL errors: {format_graphql_errors(parsed_errors)}",
-            errors=parsed_errors,
-            query=PRODUCT_REORDER_MEDIA_MUTATION,
-        )
+    _check_graphql_errors(data, PRODUCT_REORDER_MEDIA_MUTATION)
 
     mutation_data = data.get("data", {}).get("productReorderMedia", {})
     media_errors = mutation_data.get("mediaUserErrors", [])
