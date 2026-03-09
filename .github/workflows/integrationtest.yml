@@ -54,6 +54,6 @@ jobs:
           fi
           echo "Shopify credentials configured for: $LIB_SHOPIFY_GRAPHQL___SHOPIFY__SHOP_URL"
 
-      - name: Run integration tests (test-slow)
+      - name: Run integration tests
         shell: bash
-        run: make test-slow
+        run: make testintegration

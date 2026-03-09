@@ -4,6 +4,22 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [2.0.3] - 2026-03-09
+
+### Changed
+- Migrated build tooling from `scripts/` to `bmk` (persistent uv tool)
+- Updated CI integration test workflow to use `make testintegration`
+- Bumped dependency minimum versions (filelock, orjson, ruff, bandit, textual, import-linter, hatchling)
+- Fixed shell script formatting in `reset_git_history.sh` (4-space indent, shellcheck compliance)
+
+### Removed
+- Removed legacy `scripts/` directory (replaced by bmk)
+- Removed obsolete `test_scripts.py`
+
+### Fixed
+- Registered `local_only` pytest marker in `pyproject.toml` to suppress warnings
+- Updated CI/CD runner and action versions
+
 ## [2.0.2] - 2026-02-13
 
 ### Changed
@@ -47,6 +63,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Removed duplicate StrEnum compatibility shims (consolidated to `_compat.py`)
 
 ## [Unreleased]
+
+## [2.0.3] 2026-03-09 11:52:50
 
 ### Added
 - `test-slow` target added to interactive TUI menu for running integration tests

@@ -1,16 +1,16 @@
 [project]
 name = "lib_shopify_graphql"
-version = "2.0.2"
+version = "2.0.3"
 description = "Python library for Shopify GraphQL API interactions"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "rich-click>=1.9.7",
-    "lib_cli_exit_tools>=2.2.4",
-    "lib_log_rich>=6.3.1",
-    "lib_layered_config>=5.4.0",
-    "filelock>=3.20.3",
-    "orjson>=3.11.6",
+    "lib_cli_exit_tools>=2.3.0",
+    "lib_log_rich>=6.3.3",
+    "lib_layered_config>=5.5.0",
+    "filelock>=3.25.0",
+    "orjson>=3.11.7",
     "httpx>=0.28.1",
     "pydantic>=2.12.5",
 ]
@@ -39,15 +39,15 @@ Issues = "https://github.com/bitranox/lib_shopify_graphql/issues"
 dev = [
   "pytest>=9.0.2",
   "pytest-cov>=7.0.0",
-  "ruff>=0.14.14",
+  "ruff>=0.15.5",
   "pyright[nodejs]>=1.1.408",
-  "bandit>=1.9.3",
+  "bandit>=1.9.4",
   "build>=1.4.0",
   "twine>=6.2.0",
   "codecov-cli>=11.2.6",
   "pip-audit>=2.10.0",
-  "textual>=7.5.0",
-  "import-linter>=2.9",
+  "textual>=8.0.2",
+  "import-linter>=2.11",
   "rtoml>=0.13.0",
 ]
 mysql = [
@@ -59,7 +59,7 @@ lib_shopify_graphql = "lib_shopify_graphql.cli:main"
 lib-shopify-graphql = "lib_shopify_graphql.cli:main"
 
 [build-system]
-requires = ["hatchling>=1.28.0"]
+requires = ["hatchling>=1.29.0"]
 build-backend = "hatchling.build"
 
 
@@ -120,6 +120,7 @@ markers = [
   "os_posix: test exercises behavior requiring POSIX semantics",
   "os_linux: test exercises Linux-only behavior",
   "integration: integration tests requiring real Shopify API connection (slow)",
+  "local_only: tests that only run locally, not in CI",
   "mysql_integration: MySQL backend integration tests (skipped in CI)",
 ]
 
