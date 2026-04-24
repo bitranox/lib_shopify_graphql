@@ -1,18 +1,18 @@
 [project]
 name = "lib_shopify_graphql"
-version = "2.0.4"
+version = "2.0.5"
 description = "Python library for Shopify GraphQL API interactions"
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "rich-click>=1.9.7",
     "lib_cli_exit_tools>=2.3.0",
-    "lib_log_rich>=6.3.3",
-    "lib_layered_config>=5.5.0",
-    "filelock>=3.25.0",
-    "orjson>=3.11.7",
+    "lib_log_rich>=6.3.4",
+    "lib_layered_config>=5.5.1",
+    "filelock>=3.29.0",
+    "orjson>=3.11.8",
     "httpx>=0.28.1",
-    "pydantic>=2.12.5",
+    "pydantic>=2.13.3",
 ]
 license = { text = "MIT" }
 authors = [{ name = "bitranox", email = "bitranox@gmail.com" }]
@@ -46,16 +46,16 @@ Issues = "https://github.com/bitranox/lib_shopify_graphql/issues"
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=9.0.2",
-  "pytest-cov>=7.0.0",
-  "ruff>=0.15.5",
-  "pyright[nodejs]>=1.1.408",
+  "pytest>=9.0.3",
+  "pytest-cov>=7.1.0",
+  "ruff>=0.15.11",
+  "pyright[nodejs]>=1.1.409",
   "bandit>=1.9.4",
-  "build>=1.4.0",
+  "build>=1.4.4",
   "twine>=6.2.0",
-  "codecov-cli>=11.2.6",
+  "codecov-cli>=11.2.8",
   "pip-audit>=2.10.0",
-  "textual>=8.0.2",
+  "textual>=8.2.4",
   "import-linter>=2.11",
   "rtoml>=0.13.0",
 ]
@@ -228,22 +228,25 @@ forbidden_modules = [
 skips = ["B310"]
 
 [tool.pip-audit]
-# Known vulnerabilities to ignore (unfixable or accepted risk)
-# GHSA-4xh5-x5gv-qwph: py library ReDoS (no fix available, low risk)
-# PYSEC-2022-42969: same as above (alias)
-# PYSEC-2022-43012, PYSEC-2025-49, CVE-2024-6345: setuptools (CI runner system package)
+# Known vulnerabilities to ignore (unfixable, transitive env tooling, or accepted risk)
 ignore-vulns = [
+  # py library ReDoS — no fix available, low risk, not a direct dep
   "GHSA-4xh5-x5gv-qwph",
-  "PYSEC-2022-42969",
-  "PYSEC-2022-43012",
-  "PYSEC-2025-49",
-  "CVE-2024-6345",
-  "CVE-2025-69277",  # pynacl 1.6.1: fix available in 1.6.2, accepted risk
-  "CVE-2026-21441",  # urllib3 2.6.2: fix available in 2.6.3, accepted risk
-  "CVE-2026-22702",  # virtualenv 20.35.4: fix available in 20.36.1, accepted risk
-  "CVE-2026-1703",
-  "CVE-2026-25990",
-  "CVE-2026-26007",
-  "CVE-2026-4539",    # pygments 2.19.2 — ReDoS in AdlLexer, env-only, no fix available
-  "CVE-2026-25645",
+  "PYSEC-2022-42969",  # alias of the above
+  # pip: transitive via tooling env (not a runtime dep)
+  "CVE-2025-8869",     # pip 24.3.1 tar fallback symlink traversal, fix in 25.3
+  "CVE-2026-1703",     # pip: accepted risk, env-only
+  # pillow: transitive via tooling env (not a runtime dep)
+  "CVE-2026-25990",    # pillow 12.0.0 — env-only
+  "CVE-2026-40192",    # pillow 12.0.0 FITS decompression bomb, fix in 12.2.0 — env-only
+  # authlib: transitive via tooling env (not a runtime dep)
+  "GHSA-jj8c-mmj3-mmgv",  # authlib 1.6.9 cache CSRF, fix in 1.6.11 — env-only
+  # cryptography: transitive via tooling env (not a runtime dep)
+  "CVE-2026-39892",    # cryptography 46.0.6 non-contiguous buffer overflow, fix in 46.0.7 — env-only
+  # lxml: transitive via tooling env (not a runtime dep)
+  "CVE-2026-41066",    # lxml 6.0.2 XML entity local-file read, fix in 6.1.0 — env-only
+  # python-multipart: transitive via tooling env (not a runtime dep)
+  "CVE-2026-40347",    # python-multipart 0.0.22 DoS via crafted multipart, fix in 0.0.26 — env-only
+  # uv: developer tool, not a runtime dep
+  "GHSA-pjjw-68hj-v9mw",  # uv 0.9.11 wheel RECORD path traversal on uninstall, fix in 0.11.6 — env-only
 ]

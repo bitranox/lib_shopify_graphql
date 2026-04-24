@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [2.0.5] - 2026-04-24
+
+### Fixed
+- Replaced `Iterator[ShopifySession]` with `Generator[ShopifySession]` as the return annotation of `cli._common.shopify_session` to clear a pyright 1.1.409 `reportDeprecated` error on `@contextmanager`
+
+### Changed
+- Refreshed `[tool.pip-audit].ignore-vulns` in `pyproject.toml`: removed entries no longer flagged (setuptools, pynacl, urllib3, virtualenv, pygments, CVE-2026-25645/CVE-2026-26007) and added current environment-only vulnerabilities (authlib, cryptography, lxml, pillow FITS, pip symlink, python-multipart, uv wheel RECORD)
+- Bumped dev and runtime dependency floors (`lib_log_rich`, `lib_layered_config`, `filelock`, `orjson`, `pydantic`, `pytest`, `pytest-cov`, `ruff`, `pyright`, `build`, `codecov-cli`, `textual`)
+- Updated CI/CD workflow matrix (codecov-action v6, pip-audit warning-only), removed Snyk badge from `README.md`
+
 ## [2.0.4] - 2026-03-09
 
 ### Changed
@@ -79,6 +89,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Removed duplicate StrEnum compatibility shims (consolidated to `_compat.py`)
 
 ## [Unreleased]
+
+## [2.0.5] 2026-04-24 12:02:07
 
 ## [2.0.4] 2026-03-09 13:03:28
 
