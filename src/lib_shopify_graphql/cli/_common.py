@@ -11,7 +11,7 @@ This module contains shared components used across CLI commands:
 from __future__ import annotations
 
 import logging
-from collections.abc import Iterator
+from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
@@ -333,7 +333,7 @@ def run_cli(cli_group: click.Group, argv: Sequence[str] | None) -> int:
 
 
 @contextmanager
-def shopify_session(credentials: ShopifyCredentials) -> Iterator[ShopifySession]:
+def shopify_session(credentials: ShopifyCredentials) -> Generator[ShopifySession]:
     """Context manager for authenticated Shopify sessions.
 
     Handles login and guaranteed logout on exit (even on exceptions).
