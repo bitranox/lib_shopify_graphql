@@ -844,7 +844,7 @@ class TestImageOperations:
         import tempfile
         from pathlib import Path
 
-        import httpx
+        import httpx2
 
         # Skip if product has no images to download
         if not test_product.images:
@@ -852,7 +852,7 @@ class TestImageOperations:
 
         # Download existing image to temp file
         source_url = test_product.images[0].url
-        with httpx.Client() as client:
+        with httpx2.Client() as client:
             response = client.get(source_url)
             response.raise_for_status()
             image_data = response.content

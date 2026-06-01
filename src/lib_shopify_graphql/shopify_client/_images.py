@@ -16,7 +16,7 @@ import mimetypes
 from pathlib import Path
 from typing import Any, TypedDict, cast
 
-import httpx
+import httpx2
 from pydantic import BaseModel, ConfigDict
 
 from ..adapters.mutations import (
@@ -208,7 +208,7 @@ def _upload_file_to_staged_target(
         # Check if this is a Google Cloud Storage signed URL
         if "X-Goog-" in staged_target.url or "storage.googleapis.com" in staged_target.url:
             # GCS uses PUT with file as body
-            response = httpx.put(
+            response = httpx2.put(
                 staged_target.url,
                 content=file_content,
                 headers={"Content-Type": mime_type},
@@ -221,14 +221,14 @@ def _upload_file_to_staged_target(
                 files[param.name] = (None, param.value)
             files["file"] = (file_path.name, file_content, mime_type)
 
-            response = httpx.post(
+            response = httpx2.post(
                 staged_target.url,
                 files=files,
                 timeout=60.0,
             )
 
         response.raise_for_status()
-    except httpx.HTTPError as exc:
+    except httpx2.HTTPError as exc:
         raise ImageUploadError(str(file_path), f"File upload failed: {exc}") from exc
 
 

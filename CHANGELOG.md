@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [2.0.6] - 2026-06-01
+
+### Changed
+- Replaced the `httpx` runtime dependency with `httpx2` (the Pydantic-stewarded continuation of HTTPX) for staged image uploads in `shopify_client/_images.py`; `httpx2` is an API-compatible drop-in, so only the import name changed (`httpx.put`/`httpx.post`/`httpx.HTTPError` → `httpx2.*`). The integration test helper was updated to `httpx2.Client` accordingly
+- Refreshed `[tool.pip-audit].ignore-vulns`: removed entries no longer flagged (pip symlink, pillow FITS, authlib, cryptography, lxml, python-multipart, prior uv wheel-RECORD) and added `paramiko` CVE-2026-44405 and `uv` GHSA-4gg8-gxpx-9rph (both developer-toolchain-only, not runtime dependencies)
+- Bumped runtime and dev dependency floors (`rich-click`, `lib_cli_exit_tools`, `orjson`, `pydantic`, `ruff`, `build`, `textual`, `pymysql`)
+
+### Fixed
+- Restored pyright's built-in default excludes (`**/node_modules`, `**/__pycache__`, `**/.*`) in `[tool.pyright]`, which were silently overridden once an explicit `exclude` list was set. A populated local `.venv` no longer causes the `make test` pyright stage to crawl `site-packages` and hang
+
 ## [2.0.5] - 2026-04-24
 
 ### Fixed
@@ -89,6 +99,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Removed duplicate StrEnum compatibility shims (consolidated to `_compat.py`)
 
 ## [Unreleased]
+
+## [2.0.6] 2026-06-01 14:06:00
 
 ## [2.0.5] 2026-04-24 12:02:07
 
