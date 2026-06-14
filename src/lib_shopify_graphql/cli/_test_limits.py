@@ -13,6 +13,8 @@ from typing import TYPE_CHECKING, Any
 import lib_log_rich.runtime
 import rich_click as click
 
+from .typed_click import option
+
 from ..adapters.parsers import get_truncation_info
 from ..adapters.queries import PRODUCTS_LIST_QUERY, get_limits_from_config
 from ..exceptions import AuthenticationError, GraphQLError
@@ -275,9 +277,9 @@ def register_test_limits_command(
     """
 
     @cli_group.command("test-limits", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option("--profile", "-p", help="Named configuration profile to load")
-    @click.option("--limit", "-n", type=int, default=None, help="Maximum products to analyze (default: all)")
-    @click.option("--query", "-q", help="Optional Shopify search query to filter products")
+    @option("--profile", "-p", help="Named configuration profile to load")
+    @option("--limit", "-n", type=int, default=None, help="Maximum products to analyze (default: all)")
+    @option("--query", "-q", help="Optional Shopify search query to filter products")
     @click.pass_context
     def cli_test_limits(
         ctx: click.Context,

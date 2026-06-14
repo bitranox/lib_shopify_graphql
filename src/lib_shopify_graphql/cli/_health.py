@@ -14,6 +14,8 @@ from urllib.error import URLError
 
 import lib_log_rich.runtime
 import rich_click as click
+
+from .typed_click import option
 from lib_layered_config import Config
 
 from ..exceptions import AuthenticationError, GraphQLError
@@ -253,7 +255,7 @@ def register_health_command(cli_group: click.Group) -> None:
     """
 
     @cli_group.command("health", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,

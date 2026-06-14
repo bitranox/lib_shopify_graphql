@@ -16,6 +16,8 @@ from typing import Any
 
 import lib_log_rich.runtime
 import rich_click as click
+
+from .typed_click import option
 from lib_layered_config import Config
 
 from ..adapters import (
@@ -253,7 +255,7 @@ def register_cache_commands(
     """
 
     @cli_group.command("tokencache-clear", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,
@@ -306,7 +308,7 @@ def register_cache_commands(
                 raise SystemExit(1)
 
     @cli_group.command("skucache-clear", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,
@@ -362,7 +364,7 @@ def register_cache_commands(
                 raise SystemExit(1)
 
     @cli_group.command("cache-clear-all", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,
@@ -413,13 +415,13 @@ def register_cache_commands(
                 raise SystemExit(1)
 
     @cli_group.command("skucache-rebuild", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,
         help="Override profile from root command (e.g., 'production', 'test')",
     )
-    @click.option(
+    @option(
         "--query",
         type=str,
         default=None,
@@ -480,13 +482,13 @@ def register_cache_commands(
                 raise SystemExit(1)
 
     @cli_group.command("skucache-check", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,
         help="Override profile from root command (e.g., 'production', 'test')",
     )
-    @click.option(
+    @option(
         "--query",
         type=str,
         default=None,

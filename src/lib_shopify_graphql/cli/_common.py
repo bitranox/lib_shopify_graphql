@@ -112,7 +112,7 @@ class MySQLConfig(BaseModel):
 # =============================================================================
 
 
-class EnumChoice(click.ParamType, Generic[E]):
+class EnumChoice(click.ParamType[E], Generic[E]):
     """Click parameter type that converts strings to enum values at the boundary.
 
     This ensures string-to-enum conversion happens at the CLI edge,

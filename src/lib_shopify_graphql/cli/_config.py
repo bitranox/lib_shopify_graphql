@@ -14,6 +14,8 @@ from typing import NoReturn
 import lib_log_rich.runtime
 import rich_click as click
 
+from .typed_click import option
+
 from ..config_deploy import deploy_configuration
 from ..config_show import display_config
 from ..enums import DeployTarget, OutputFormat
@@ -83,20 +85,20 @@ def register_config_commands(cli_group: click.Group) -> None:
     """
 
     @cli_group.command("config", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option(
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.HUMAN,
         help="Output format (human-readable or JSON)",
     )
-    @click.option(
+    @option(
         "--section",
         type=str,
         default=None,
         help="Show only a specific configuration section (e.g., 'lib_log_rich')",
     )
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,
@@ -126,7 +128,7 @@ def register_config_commands(cli_group: click.Group) -> None:
             display_config(config, format=output_format, section=section)
 
     @cli_group.command("config-deploy", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option(
+    @option(
         "--target",
         "targets",
         type=EnumChoice(DeployTarget),
@@ -134,13 +136,13 @@ def register_config_commands(cli_group: click.Group) -> None:
         required=True,
         help="Target configuration layer(s) to deploy to (can specify multiple)",
     )
-    @click.option(
+    @option(
         "--force",
         is_flag=True,
         default=False,
         help="Overwrite existing configuration files",
     )
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,

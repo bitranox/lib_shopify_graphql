@@ -17,6 +17,8 @@ import lib_log_rich.runtime
 import orjson
 import rich_click as click
 
+from .typed_click import argument, option
+
 from ..enums import OutputFormat
 from ..exceptions import AuthenticationError, GraphQLError, ProductNotFoundError
 from ..models import ImageReorderResult, ImageSource, ImageUpdate
@@ -107,18 +109,18 @@ def register_image_commands(
     """
 
     @cli_group.command("add-image", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.argument("product_id", type=str)
-    @click.option("--url", "urls", multiple=True, help="Image URL (repeatable)")
-    @click.option("--file", "files", multiple=True, type=click.Path(exists=True), help="Local file path (repeatable)")
-    @click.option("--alt", type=str, default=None, help="Alt text (applies to all images)")
-    @click.option(
+    @argument("product_id", type=str)
+    @option("--url", "urls", multiple=True, help="Image URL (repeatable)")
+    @option("--file", "files", multiple=True, type=click.Path(exists=True), help="Local file path (repeatable)")
+    @option("--alt", type=str, default=None, help="Alt text (applies to all images)")
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.JSON,
         help="Output format (default: json)",
     )
-    @click.option("--profile", type=str, default=None, help="Override profile from root command")
+    @option("--profile", type=str, default=None, help="Override profile from root command")
     @click.pass_context
     def cli_add_image(
         ctx: click.Context,
@@ -156,16 +158,16 @@ def register_image_commands(
                 raise SystemExit(1)
 
     @cli_group.command("delete-image", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.argument("product_id", type=str)
-    @click.argument("image_id", type=str)
-    @click.option(
+    @argument("product_id", type=str)
+    @argument("image_id", type=str)
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.HUMAN,
         help="Output format (default: human)",
     )
-    @click.option("--profile", type=str, default=None, help="Override profile from root command")
+    @option("--profile", type=str, default=None, help="Override profile from root command")
     @click.pass_context
     def cli_delete_image(
         ctx: click.Context,
@@ -222,17 +224,17 @@ def register_image_commands(
                 raise SystemExit(1)
 
     @cli_group.command("update-image", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.argument("product_id", type=str)
-    @click.argument("image_id", type=str)
-    @click.option("--alt", type=str, required=True, help="New alt text for the image")
-    @click.option(
+    @argument("product_id", type=str)
+    @argument("image_id", type=str)
+    @option("--alt", type=str, required=True, help="New alt text for the image")
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.JSON,
         help="Output format (default: json)",
     )
-    @click.option("--profile", type=str, default=None, help="Override profile from root command")
+    @option("--profile", type=str, default=None, help="Override profile from root command")
     @click.pass_context
     def cli_update_image(
         ctx: click.Context,
@@ -290,16 +292,16 @@ def register_image_commands(
                 raise SystemExit(1)
 
     @cli_group.command("reorder-images", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.argument("product_id", type=str)
-    @click.option("--order", type=str, required=True, help="Comma-separated image IDs in desired order")
-    @click.option(
+    @argument("product_id", type=str)
+    @option("--order", type=str, required=True, help="Comma-separated image IDs in desired order")
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.HUMAN,
         help="Output format (default: human)",
     )
-    @click.option("--profile", type=str, default=None, help="Override profile from root command")
+    @option("--profile", type=str, default=None, help="Override profile from root command")
     @click.pass_context
     def cli_reorder_images(
         ctx: click.Context,

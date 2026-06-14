@@ -23,6 +23,8 @@ from collections.abc import Sequence
 import lib_log_rich.runtime
 import rich_click as click
 
+from .typed_click import option, version_option
+
 from .. import __init__conf__
 from ..adapters import PYMYSQL_AVAILABLE
 from ..config import get_config
@@ -92,18 +94,18 @@ _create_mysql_cache_adapter = create_mysql_cache_adapter
     context_settings=CLICK_CONTEXT_SETTINGS,
     invoke_without_command=True,
 )
-@click.version_option(
+@version_option(
     version=__init__conf__.version,
     prog_name=__init__conf__.shell_command,
     message=f"{__init__conf__.shell_command} version {__init__conf__.version}",
 )
-@click.option(
+@option(
     "--traceback/--no-traceback",
     is_flag=True,
     default=False,
     help="Show full Python traceback on errors",
 )
-@click.option(
+@option(
     "--profile",
     type=str,
     default=None,

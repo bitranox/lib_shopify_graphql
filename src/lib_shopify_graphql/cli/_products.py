@@ -17,6 +17,8 @@ from typing import TYPE_CHECKING, Any
 import lib_log_rich.runtime
 import orjson
 import rich_click as click
+
+from .typed_click import argument, option
 from lib_layered_config import Config
 
 from ..adapters import CachedSKUResolver
@@ -346,15 +348,15 @@ def register_product_commands(
     """
 
     @cli_group.command("get-product", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.argument("product_id", type=str)
-    @click.option(
+    @argument("product_id", type=str)
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.JSON,
         help="Output format (default: json)",
     )
-    @click.option(
+    @option(
         "--profile",
         type=str,
         default=None,
@@ -399,35 +401,35 @@ def register_product_commands(
                 raise SystemExit(1)
 
     @cli_group.command("create-product", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.option("--title", type=str, default=None, help="Product title (required if no --json)")
-    @click.option("--vendor", type=str, default=None, help="Product vendor")
-    @click.option("--product-type", type=str, default=None, help="Product type/category")
-    @click.option(
+    @option("--title", type=str, default=None, help="Product title (required if no --json)")
+    @option("--vendor", type=str, default=None, help="Product vendor")
+    @option("--product-type", type=str, default=None, help="Product type/category")
+    @option(
         "--status",
         type=EnumChoice(ProductStatus),
         default=None,
         help="Product status (default: DRAFT)",
     )
-    @click.option("--tags", type=str, default=None, help="Comma-separated tags")
-    @click.option("--description", type=str, default=None, help="HTML description")
-    @click.option("--handle", type=str, default=None, help="URL handle")
-    @click.option("--seo-title", type=str, default=None, help="SEO title")
-    @click.option("--seo-description", type=str, default=None, help="SEO meta description")
-    @click.option(
+    @option("--tags", type=str, default=None, help="Comma-separated tags")
+    @option("--description", type=str, default=None, help="HTML description")
+    @option("--handle", type=str, default=None, help="URL handle")
+    @option("--seo-title", type=str, default=None, help="SEO title")
+    @option("--seo-description", type=str, default=None, help="SEO meta description")
+    @option(
         "--json",
         "json_input",
         type=str,
         default=None,
         help="JSON input (file path or '-' for stdin)",
     )
-    @click.option(
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.JSON,
         help="Output format (default: json)",
     )
-    @click.option("--profile", type=str, default=None, help="Override profile from root command")
+    @option("--profile", type=str, default=None, help="Override profile from root command")
     @click.pass_context
     def cli_create_product(
         ctx: click.Context,
@@ -492,23 +494,23 @@ def register_product_commands(
                 raise SystemExit(1)
 
     @cli_group.command("duplicate-product", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.argument("product_id", type=str)
-    @click.argument("new_title", type=str)
-    @click.option("--no-images", is_flag=True, default=False, help="Don't copy images")
-    @click.option(
+    @argument("product_id", type=str)
+    @argument("new_title", type=str)
+    @option("--no-images", is_flag=True, default=False, help="Don't copy images")
+    @option(
         "--status",
         type=EnumChoice(ProductStatus),
         default=None,
         help="Status for new product (default: same as original)",
     )
-    @click.option(
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.JSON,
         help="Output format (default: json)",
     )
-    @click.option("--profile", type=str, default=None, help="Override profile from root command")
+    @option("--profile", type=str, default=None, help="Override profile from root command")
     @click.pass_context
     def cli_duplicate_product(
         ctx: click.Context,
@@ -563,16 +565,16 @@ def register_product_commands(
                 raise SystemExit(1)
 
     @cli_group.command("delete-product", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.argument("product_id", type=str)
-    @click.option("--force", is_flag=True, default=False, help="Skip confirmation prompt")
-    @click.option(
+    @argument("product_id", type=str)
+    @option("--force", is_flag=True, default=False, help="Skip confirmation prompt")
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.HUMAN,
         help="Output format (default: human)",
     )
-    @click.option("--profile", type=str, default=None, help="Override profile from root command")
+    @option("--profile", type=str, default=None, help="Override profile from root command")
     @click.pass_context
     def cli_delete_product(
         ctx: click.Context,
@@ -614,36 +616,36 @@ def register_product_commands(
                 raise SystemExit(1)
 
     @cli_group.command("update-product", context_settings=CLICK_CONTEXT_SETTINGS)
-    @click.argument("product_id", type=str)
-    @click.option("--title", type=str, default=None, help="Product title")
-    @click.option("--vendor", type=str, default=None, help="Product vendor")
-    @click.option("--product-type", type=str, default=None, help="Product type/category")
-    @click.option(
+    @argument("product_id", type=str)
+    @option("--title", type=str, default=None, help="Product title")
+    @option("--vendor", type=str, default=None, help="Product vendor")
+    @option("--product-type", type=str, default=None, help="Product type/category")
+    @option(
         "--status",
         type=EnumChoice(ProductStatus),
         default=None,
         help="Product status (ACTIVE, DRAFT, ARCHIVED)",
     )
-    @click.option("--tags", type=str, default=None, help="Comma-separated tags")
-    @click.option("--description", type=str, default=None, help="HTML description")
-    @click.option("--handle", type=str, default=None, help="URL handle")
-    @click.option("--seo-title", type=str, default=None, help="SEO title")
-    @click.option("--seo-description", type=str, default=None, help="SEO meta description")
-    @click.option(
+    @option("--tags", type=str, default=None, help="Comma-separated tags")
+    @option("--description", type=str, default=None, help="HTML description")
+    @option("--handle", type=str, default=None, help="URL handle")
+    @option("--seo-title", type=str, default=None, help="SEO title")
+    @option("--seo-description", type=str, default=None, help="SEO meta description")
+    @option(
         "--json",
         "json_input",
         type=str,
         default=None,
         help="JSON input (file path or '-' for stdin)",
     )
-    @click.option(
+    @option(
         "--format",
         "output_format",
         type=EnumChoice(OutputFormat),
         default=OutputFormat.JSON,
         help="Output format (default: json)",
     )
-    @click.option("--profile", type=str, default=None, help="Override profile from root command")
+    @option("--profile", type=str, default=None, help="Override profile from root command")
     @click.pass_context
     def cli_update_product(
         ctx: click.Context,
