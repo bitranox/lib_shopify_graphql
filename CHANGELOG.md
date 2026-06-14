@@ -7,7 +7,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 ## [2.0.7] - 2026-06-14
 
 ### Changed
-- Added a `cli/typed_click.py` facade wrapping rich-click's `option` / `version_option` / `argument` decorators behind explicit, fully-known signatures, keeping the CLI strict-clean under pyright 1.1.410 (`reportUnknownMemberType`) without disabling the rule (ignore isolated to the facade). Also parameterized `EnumChoice(click.ParamType[E])` to satisfy `reportMissingTypeArgument`.
+- Added a `cli/typed_click.py` facade wrapping rich-click's `option` / `version_option` / `argument` decorators behind explicit, fully-known signatures, keeping the CLI strict-clean under pyright (`reportUnknownMemberType`) without disabling the rule (ignore isolated to the facade).
 - Bumped internal dependency floors: `lib_cli_exit_tools>=2.3.2`, `lib_log_rich>=6.3.5`, `lib_layered_config>=5.5.2`.
 
 ## [2.0.6] - 2026-06-01
