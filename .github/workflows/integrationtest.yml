@@ -18,7 +18,7 @@ jobs:
       LIB_SHOPIFY_GRAPHQL___SHOPIFY__CLIENT_ID: ${{ secrets.SHOPIFY_CLIENT_ID }}
       LIB_SHOPIFY_GRAPHQL___SHOPIFY__CLIENT_SECRET: ${{ secrets.SHOPIFY_CLIENT_SECRET }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@v7
 
       - uses: actions/setup-python@v6
         with:
