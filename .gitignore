@@ -188,3 +188,6 @@ AGENTS.md
 # DIV
 # .devcontainer/ # needed for github codespaces
 LLM-CONTEXT/
+
+# Local, per-developer settings (Claude Code etc.) - never commit
+*.local.json
