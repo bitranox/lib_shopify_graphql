@@ -7,8 +7,12 @@ requires-python = ">=3.10"
 dependencies = [
     "rich-click>=1.9.8",
     # click is imported directly (cli/_common.py subclasses click.ParamType), so declare it
-    # rather than free-riding on rich-click, which only requires click>=8. The floor is 8.4:
-    # ParamType became generic there, and EnumChoice subscripts it (TypeError on click<8.4).
+    # rather than free-riding on rich-click, which only requires click>=8 - a resolution that
+    # would crash EnumChoice at import. The CODE's hard requirement is >=8.4.0: ParamType became
+    # generic there and EnumChoice subscripts it (TypeError on anything older). The number below
+    # is higher than that and is not hand-chosen: bmk's `deps update` stage runs inside
+    # `make test` and rewrites every floor to the current release, so lowering it by hand does
+    # not stick - the next `make test` puts it back.
     "click>=8.4.2",
     "lib_cli_exit_tools>=2.3.2",
     "lib_log_rich>=6.3.5",
