@@ -15,7 +15,7 @@ from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
-from typing import TYPE_CHECKING, Final, Generic, NoReturn, TypeVar
+from typing import TYPE_CHECKING, Final, NoReturn, TypeVar
 
 import lib_cli_exit_tools
 import rich_click as click
@@ -112,7 +112,7 @@ class MySQLConfig(BaseModel):
 # =============================================================================
 
 
-class EnumChoice(click.ParamType, Generic[E]):
+class EnumChoice(click.ParamType[E]):
     """Click parameter type that converts strings to enum values at the boundary.
 
     This ensures string-to-enum conversion happens at the CLI edge,

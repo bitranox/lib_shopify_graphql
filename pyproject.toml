@@ -6,12 +6,16 @@ readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
     "rich-click>=1.9.8",
+    # click is imported directly (cli/_common.py subclasses click.ParamType), so declare it
+    # rather than free-riding on rich-click, which only requires click>=8. The floor is 8.4:
+    # ParamType became generic there, and EnumChoice subscripts it (TypeError on click<8.4).
+    "click>=8.4.2",
     "lib_cli_exit_tools>=2.3.2",
     "lib_log_rich>=6.3.5",
-    "lib_layered_config>=5.5.2",
-    "filelock>=3.29.0",
+    "lib_layered_config>=5.6.0",
+    "filelock>=3.29.7",
     "orjson>=3.11.9",
-    "httpx2>=2.2.0",
+    "httpx2>=2.6.0",
     "pydantic>=2.13.4",
 ]
 license = { text = "MIT" }
@@ -46,17 +50,23 @@ Issues = "https://github.com/bitranox/lib_shopify_graphql/issues"
 
 [project.optional-dependencies]
 dev = [
-  "pytest>=9.0.3",
+  "pytest>=9.1.1",
   "pytest-cov>=7.1.0",
-  "ruff>=0.15.15",
-  "pyright[nodejs]>=1.1.409",
+  "ruff>=0.15.21",
+  "pyright[nodejs]>=1.1.411",
   "bandit>=1.9.4",
-  "build>=1.5.0",
+  "build>=1.5.1",
   "twine>=6.2.0",
-  "codecov-cli>=11.2.8",
-  "pip-audit>=2.10.0",
-  "textual>=8.2.7",
-  "import-linter>=2.11",
+  # codecov-cli is disabled, not dropped: it requires click<8.3.0, which holds click at
+  # 8.2.1 (CVE-2026-7246). Worse, bmk requires click>=8.4.2, so uv cannot satisfy both and
+  # silently BACKTRACKS bmk to 3.1.7 - this repo stopped receiving bmk updates entirely,
+  # with no error. Verified nothing is lost: CI uploads coverage via codecov/codecov-action
+  # (.github/workflows/default_cicd_public.yml) and nothing here invokes the CLI.
+  # Re-enable once codecov-cli relaxes its click<8.3.0 pin.
+  # "codecov-cli>=11.2.8",
+  "pip-audit>=2.10.1",
+  "textual>=8.2.8",
+  "import-linter>=2.13",
   "rtoml>=0.13.0",
 ]
 mysql = [
@@ -68,7 +78,7 @@ lib_shopify_graphql = "lib_shopify_graphql.cli:main"
 lib-shopify-graphql = "lib_shopify_graphql.cli:main"
 
 [build-system]
-requires = ["hatchling>=1.29.0"]
+requires = ["hatchling>=1.31.0"]
 build-backend = "hatchling.build"
 
 
