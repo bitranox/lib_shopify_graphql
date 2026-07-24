@@ -15,14 +15,18 @@ Note:
 
 from __future__ import annotations
 
-from collections.abc import Sequence
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from lib_layered_config import deploy_config
 
 from . import __init__conf__
 from .config import get_default_config_path
-from .enums import DeployTarget
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
+
+    from .enums import DeployTarget
 
 
 def deploy_configuration(

@@ -4,7 +4,14 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
-## [2.0.7] - 2026-06-14
+## [2.0.8] - 2026-07-24
+
+### Fixed
+- Latest ruff (0.16) widened its default rule set from ~0 (no explicit `select`) to ~920 rules, turning CI red with hundreds of newly-enforced violations across unrelated families. Pinned the project's actual lint policy with an explicit curated `[tool.ruff.lint].select` (mirroring the bitranox CLI template) plus targeted per-file-ignores, then fixed the real violations at the root: converted ~120 f-string logging calls to lazy `%`-style formatting (`G004`), added `from err`/`from None` to every bare `raise` inside an `except` block (`B904`), moved trivial deferred imports to module top and kept genuine circular-import/test-monkeypatch deferrals with a documented `# noqa: PLC0415`, made internal helpers and Click callbacks keyword-only to fix `PLR0917` without breaking call sites, replaced blind `pytest.raises(Exception)` with the concrete `pydantic.ValidationError` (and `dataclasses.FrozenInstanceError` where the tested type is a plain frozen dataclass, not a Pydantic model) for `B017`, and decomposed `config_show.display_config` into smaller helpers to clear `PLR0912`/`PLC0206`.
+- `PLW0603` (module-level singleton caches in `composition.py` / `shopify_client/_common.py`), `PLR0913` on public adapter/API constructors with independent config or DI-seam parameters, and `S608`/`S310` (parametrized MySQL queries with a validated table name; `urlopen` against a validated `.myshopify.com` shop URL) are genuine, already-accepted designs - documented with narrow `# noqa` comments (kept as a separate `#` comment from any existing bandit `# nosec`, since a merged comment stops bandit's own suppression from matching) rather than loosening the ruff rule set.
+
+### Changed
+- Bumped internal dependency floors and `ruff>=0.16.0` (dev pin, to match the version now enforced by the curated select).
 
 ### Changed
 - Added a `cli/typed_click.py` facade wrapping rich-click's `option` / `version_option` / `argument` decorators behind explicit, fully-known signatures, keeping the CLI strict-clean under pyright (`reportUnknownMemberType`) without disabling the rule (ignore isolated to the facade).
@@ -105,6 +112,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Removed duplicate StrEnum compatibility shims (consolidated to `_compat.py`)
 
 ## [Unreleased]
+
+## [2.0.8] 2026-07-24 17:56:44
 
 ## [2.0.7] 2026-06-14 21:48:55
 

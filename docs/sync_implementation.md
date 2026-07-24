@@ -194,12 +194,13 @@ sync.sync()
 ```python
 class ExportResult(BaseModel):
     """Result of an export operation."""
+
     model_config = ConfigDict(frozen=True)
 
-    count: int                    # Number of products exported
-    output_path: Path | None      # File path (if file export)
-    duration_seconds: float       # Time taken
-    errors: list[ExportError]     # Any non-fatal errors
+    count: int  # Number of products exported
+    output_path: Path | None  # File path (if file export)
+    duration_seconds: float  # Time taken
+    errors: list[ExportError]  # Any non-fatal errors
 ```
 
 ### ImportResult
@@ -207,13 +208,14 @@ class ExportResult(BaseModel):
 ```python
 class ImportResult(BaseModel):
     """Result of an import operation."""
+
     model_config = ConfigDict(frozen=True)
 
-    created: int                  # Products created
-    updated: int                  # Products updated
-    skipped: int                  # Products skipped (on_conflict="skip")
-    failed: int                   # Products that failed
-    errors: list[ImportError]     # Detailed error info
+    created: int  # Products created
+    updated: int  # Products updated
+    skipped: int  # Products skipped (on_conflict="skip")
+    failed: int  # Products that failed
+    errors: list[ImportError]  # Detailed error info
     duration_seconds: float
 ```
 
@@ -222,9 +224,10 @@ class ImportResult(BaseModel):
 ```python
 class SyncConfig(BaseModel):
     """Configuration for sync operations."""
+
     model_config = ConfigDict(frozen=True)
 
-    batch_size: int = 50          # Products per API call
+    batch_size: int = 50  # Products per API call
     on_conflict: Literal["update", "skip", "error"] = "update"
     include_variants: bool = True
     include_images: bool = True

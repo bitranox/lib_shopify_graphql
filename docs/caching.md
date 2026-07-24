@@ -34,8 +34,10 @@ SHOPIFY__TOKEN_CACHE__JSON_PATH=/var/cache/shopify/token_cache.json
 ```python
 from pathlib import Path
 from lib_shopify_graphql import (
-    login, ShopifyCredentials,
-    create_cached_token_provider, JsonFileCacheAdapter,
+    login,
+    ShopifyCredentials,
+    create_cached_token_provider,
+    JsonFileCacheAdapter,
 )
 
 # Create cached token provider

@@ -61,7 +61,7 @@ from ._images import (
 )
 
 # Internal utilities (Updatable is used internally but not exported in __all__)
-from ._internal import UNSET, UnsetType  # noqa: F401
+from ._internal import UNSET, UnsetType
 from ._internal import Updatable as Updatable
 
 # Mutation/update models
@@ -90,51 +90,13 @@ from ._operations import (
 )
 
 __all__ = [
+    "SEO",
     # Sentinel for partial updates
     "UNSET",
-    "UnsetType",
-    # Enums
-    "CurrencyCode",
-    "InventoryPolicy",
-    "InventoryQuantityName",
-    "InventoryReason",
-    "MediaContentType",
-    "MediaStatus",
-    "MetafieldType",
-    "ProductStatus",
-    "WeightUnit",
-    # Read models
-    "InventoryLevel",
-    "Metafield",
-    "Money",
-    "PriceRange",
-    "Product",
-    "ProductImage",
-    "ProductMedia",
-    "ProductOption",
-    "ProductVariant",
-    "SEO",
-    "SelectedOption",
-    "ShopifyCredentials",
-    "ShopifySessionInfo",
-    # Update input models
-    "MetafieldInput",
-    "ProductCreate",
-    "ProductUpdate",
-    "VariantUpdate",
     # Request/result models
     "BulkUpdateResult",
-    "ProductUpdateRequest",
-    "UpdateFailure",
-    "UpdateSuccess",
-    "VariantUpdateRequest",
-    # Metafield deletion models
-    "MetafieldDeleteFailure",
-    "MetafieldDeleteResult",
-    "MetafieldIdentifier",
-    # Pagination models
-    "PageInfo",
-    "ProductConnection",
+    # Enums
+    "CurrencyCode",
     # Product lifecycle models
     "DeleteProductResult",
     "DuplicateProductResult",
@@ -146,5 +108,43 @@ __all__ = [
     "ImageReorderResult",
     "ImageSource",
     "ImageUpdate",
+    # Read models
+    "InventoryLevel",
+    "InventoryPolicy",
+    "InventoryQuantityName",
+    "InventoryReason",
+    "MediaContentType",
+    "MediaStatus",
+    "Metafield",
+    # Metafield deletion models
+    "MetafieldDeleteFailure",
+    "MetafieldDeleteResult",
+    "MetafieldIdentifier",
+    # Update input models
+    "MetafieldInput",
+    "MetafieldType",
+    "Money",
+    # Pagination models
+    "PageInfo",
+    "PriceRange",
+    "Product",
+    "ProductConnection",
+    "ProductCreate",
+    "ProductImage",
+    "ProductMedia",
+    "ProductOption",
+    "ProductStatus",
+    "ProductUpdate",
+    "ProductUpdateRequest",
+    "ProductVariant",
+    "SelectedOption",
+    "ShopifyCredentials",
+    "ShopifySessionInfo",
     "StagedUploadTarget",
+    "UnsetType",
+    "UpdateFailure",
+    "UpdateSuccess",
+    "VariantUpdate",
+    "VariantUpdateRequest",
+    "WeightUnit",
 ]

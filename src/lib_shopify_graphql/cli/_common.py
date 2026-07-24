@@ -11,7 +11,6 @@ This module contains shared components used across CLI commands:
 from __future__ import annotations
 
 import logging
-from collections.abc import Generator
 from contextlib import contextmanager
 from dataclasses import dataclass, field
 from enum import Enum
@@ -19,11 +18,12 @@ from typing import TYPE_CHECKING, Final, NoReturn, TypeVar
 
 import lib_cli_exit_tools
 import rich_click as click
-from lib_layered_config import Config
 from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
-    from collections.abc import Sequence
+    from collections.abc import Generator, Sequence
+
+    from lib_layered_config import Config
 
     from ..models import ShopifyCredentials
     from ..shopify_client import ShopifySession
@@ -132,7 +132,7 @@ class EnumChoice(click.ParamType[E]):
         self.enum_type = enum_type
         self.name = enum_type.__name__
 
-    def get_metavar(self, param: click.Parameter, ctx: click.Context | None = None) -> str:  # noqa: ARG002
+    def get_metavar(self, param: click.Parameter, ctx: click.Context | None = None) -> str:
         """Return the metavar for help display."""
         choices = [str(e.value) for e in self.enum_type]
         return "[" + "|".join(choices) + "]"
@@ -209,7 +209,7 @@ class CliContext:
 # =============================================================================
 
 
-def apply_traceback_preferences(enabled: bool) -> None:
+def apply_traceback_preferences(*, enabled: bool) -> None:
     """Synchronise shared traceback flags with the requested preference.
 
     ``lib_cli_exit_tools`` inspects global flags to decide whether tracebacks
@@ -319,9 +319,9 @@ def run_cli(cli_group: click.Group, argv: Sequence[str] | None) -> int:
             argv=list(argv) if argv is not None else None,
             prog_name=__init__conf__.shell_command,
         )
-    except BaseException as exc:  # noqa: BLE001 - handled by shared printers
+    except BaseException as exc:
         tracebacks_enabled = bool(getattr(lib_cli_exit_tools.config, "traceback", False))
-        apply_traceback_preferences(tracebacks_enabled)
+        apply_traceback_preferences(enabled=tracebacks_enabled)
         length_limit = TRACEBACK_VERBOSE_LIMIT if tracebacks_enabled else TRACEBACK_SUMMARY_LIMIT
         lib_cli_exit_tools.print_exception_message(trace_back=tracebacks_enabled, length_limit=length_limit)
         return lib_cli_exit_tools.get_system_exit_code(exc)
@@ -344,7 +344,7 @@ def shopify_session(credentials: ShopifyCredentials) -> Generator[ShopifySession
     Yields:
         An active ShopifySession.
     """
-    from . import login, logout
+    from . import login, logout  # noqa: PLC0415 - re-read on each call so monkeypatching cli.login/cli.logout takes effect
 
     session = login(credentials)
     try:
@@ -389,30 +389,30 @@ __all__ = [
     "CLICK_CONTEXT_SETTINGS",
     "TRACEBACK_SUMMARY_LIMIT",
     "TRACEBACK_VERBOSE_LIMIT",
-    # Config models
-    "TokenCacheConfig",
-    "SKUCacheConfig",
-    "MySQLConfig",
+    "CliContext",
     # Click types
     "EnumChoice",
+    "MySQLConfig",
+    "SKUCacheConfig",
+    # Config models
+    "TokenCacheConfig",
     # State classes
     "TracebackState",
-    "CliContext",
     # Traceback functions
     "apply_traceback_preferences",
-    "snapshot_traceback_state",
-    "restore_traceback_state",
-    # Context helpers
-    "store_cli_context",
-    "get_effective_profile",
-    "get_effective_config_and_profile",
-    "get_config_from_context",
-    # Session helpers
-    "shopify_session",
-    # CLI execution
-    "run_cli",
-    # Exit helpers
-    "exit_with_error",
     "exit_mysql_not_available",
     "exit_sku_cache_not_configured",
+    # Exit helpers
+    "exit_with_error",
+    "get_config_from_context",
+    "get_effective_config_and_profile",
+    "get_effective_profile",
+    "restore_traceback_state",
+    # CLI execution
+    "run_cli",
+    # Session helpers
+    "shopify_session",
+    "snapshot_traceback_state",
+    # Context helpers
+    "store_cli_context",
 ]

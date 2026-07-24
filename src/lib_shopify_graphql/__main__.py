@@ -21,14 +21,17 @@ from __future__ import annotations
 
 import logging
 from collections.abc import Callable
-from contextlib import AbstractContextManager
-from typing import Final
+from typing import TYPE_CHECKING, Final
 
 import lib_log_rich.runtime
-import rich_click as click
 from lib_cli_exit_tools import cli_session
 
 from . import __init__conf__, cli
+
+if TYPE_CHECKING:
+    from contextlib import AbstractContextManager
+
+    import rich_click as click
 
 # Match the CLI defaults so truncation behaviour stays consistent across entry
 # points regardless of whether users call the console script or ``python -m``.

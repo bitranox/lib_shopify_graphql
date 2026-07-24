@@ -12,20 +12,18 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import lib_log_rich.runtime
 import rich_click as click
-
-from .typed_click import option
-from lib_layered_config import Config
 
 from ..adapters import (
     CachedSKUResolver,
     JsonFileCacheAdapter,
     MySQLCacheAdapter,
+    get_default_sku_cache_path,
+    get_default_token_cache_path,
 )
-from ..application.ports import CachePort
 from ..enums import CacheBackend
 from ..exceptions import AuthenticationError, GraphQLError
 from ..shopify_client import (
@@ -44,8 +42,17 @@ from ._common import (
     get_effective_config_and_profile,
     shopify_session,
 )
+from .typed_click import option
+
+if TYPE_CHECKING:
+    from lib_layered_config import Config
+
+    from ..application.ports import CachePort
 
 logger = logging.getLogger(__name__)
+
+#: Maximum number of mismatched cache entries to print in detail before summarizing the rest.
+_MISMATCH_DISPLAY_LIMIT = 10
 
 
 # =============================================================================
@@ -74,7 +81,7 @@ def create_mysql_cache_adapter(
         MySQLCacheAdapter instance or None if MySQL is not configured.
     """
     # Late import to allow tests to patch cli.PYMYSQL_AVAILABLE
-    from . import PYMYSQL_AVAILABLE
+    from . import PYMYSQL_AVAILABLE  # noqa: PLC0415 - re-read on each call so monkeypatching cli.PYMYSQL_AVAILABLE takes effect
 
     if not PYMYSQL_AVAILABLE:
         logger.warning("MySQL backend requested but pymysql is not installed")
@@ -124,8 +131,6 @@ def create_token_cache_from_config(config: Config) -> CachePort | None:
     Returns:
         CachePort instance or None if token caching is not configured.
     """
-    from ..adapters.constants import get_default_token_cache_path
-
     raw_cfg = config.get("shopify.token_cache", default={})
     cfg = TokenCacheConfig.model_validate(raw_cfg)
 
@@ -158,8 +163,6 @@ def create_sku_cache_from_config(config: Config) -> CachePort | None:
     Returns:
         CachePort instance or None if SKU caching is not configured.
     """
-    from ..adapters.constants import get_default_sku_cache_path
-
     raw_cfg = config.get("shopify.sku_cache", default={})
     cfg = SKUCacheConfig.model_validate(raw_cfg)
 
@@ -228,12 +231,12 @@ def _display_skucache_details(result: Any) -> None:
     if result.mismatched:
         click.echo("")
         click.echo("Mismatched entries (different GIDs):")
-        for mismatch in result.mismatched[:10]:
+        for mismatch in result.mismatched[:_MISMATCH_DISPLAY_LIMIT]:
             click.echo(f"  • {mismatch.sku}")
             click.echo(f"      Cached:  {mismatch.cached_variant_gid}")
             click.echo(f"      Actual:  {mismatch.actual_variant_gid}")
-        if len(result.mismatched) > 10:
-            click.echo(f"  ... and {len(result.mismatched) - 10} more")
+        if len(result.mismatched) > _MISMATCH_DISPLAY_LIMIT:
+            click.echo(f"  ... and {len(result.mismatched) - _MISMATCH_DISPLAY_LIMIT} more")
 
 
 # =============================================================================
@@ -298,14 +301,14 @@ def register_cache_commands(
                 click.echo('  json_path = "/path/to/token_cache.json"', err=True)
                 raise SystemExit(0)
 
-            logger.info(f"Clearing token cache for profile '{effective_profile}'")
+            logger.info("Clearing token cache for profile '%s'", effective_profile)
             try:
                 tokencache_clear(cache)
                 click.echo("✓ Token cache cleared.")
             except Exception as exc:
                 click.echo(f"Error clearing token cache: {exc}", err=True)
-                logger.error(f"Failed to clear token cache: {exc}")
-                raise SystemExit(1)
+                logger.error("Failed to clear token cache: %s", exc)
+                raise SystemExit(1) from exc
 
     @cli_group.command("skucache-clear", context_settings=CLICK_CONTEXT_SETTINGS)
     @option(
@@ -354,14 +357,14 @@ def register_cache_commands(
                 click.echo('  json_path = "/path/to/sku_cache.json"', err=True)
                 raise SystemExit(0)
 
-            logger.info(f"Clearing SKU cache for profile '{effective_profile}'")
+            logger.info("Clearing SKU cache for profile '%s'", effective_profile)
             try:
                 skucache_clear(cache)
                 click.echo("✓ SKU cache cleared.")
             except Exception as exc:
                 click.echo(f"Error clearing SKU cache: {exc}", err=True)
-                logger.error(f"Failed to clear SKU cache: {exc}")
-                raise SystemExit(1)
+                logger.error("Failed to clear SKU cache: %s", exc)
+                raise SystemExit(1) from exc
 
     @cli_group.command("cache-clear-all", context_settings=CLICK_CONTEXT_SETTINGS)
     @option(
@@ -398,7 +401,7 @@ def register_cache_commands(
                 click.echo("Configure caching in your config file.", err=True)
                 raise SystemExit(0)
 
-            logger.info(f"Clearing all caches for profile '{effective_profile}'")
+            logger.info("Clearing all caches for profile '%s'", effective_profile)
             try:
                 cache_clear_all(token_cache, sku_cache)
 
@@ -411,8 +414,8 @@ def register_cache_commands(
                 click.echo(f"✓ Cleared: {', '.join(cleared)}.")
             except Exception as exc:
                 click.echo(f"Error clearing caches: {exc}", err=True)
-                logger.error(f"Failed to clear caches: {exc}")
-                raise SystemExit(1)
+                logger.error("Failed to clear caches: %s", exc)
+                raise SystemExit(1) from exc
 
     @cli_group.command("skucache-rebuild", context_settings=CLICK_CONTEXT_SETTINGS)
     @option(
@@ -474,12 +477,12 @@ def register_cache_commands(
                     )
 
                     click.echo(f"✓ Cache rebuilt: {total_variants} variants cached")
-                    logger.info(f"Cache rebuild complete: {total_variants} variants cached")
+                    logger.info("Cache rebuild complete: %s variants cached", total_variants)
 
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"\n✗ Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
     @cli_group.command("skucache-check", context_settings=CLICK_CONTEXT_SETTINGS)
     @option(
@@ -539,7 +542,11 @@ def register_cache_commands(
                         click.echo("✗ Cache has inconsistencies - consider running 'skucache-rebuild'")
 
                     logger.info(
-                        f"Cache check complete: {result.valid} valid, {len(result.stale)} stale, {len(result.missing)} missing, {len(result.mismatched)} mismatched"
+                        "Cache check complete: %s valid, %s stale, %s missing, %s mismatched",
+                        result.valid,
+                        len(result.stale),
+                        len(result.missing),
+                        len(result.mismatched),
                     )
 
                     if not result.is_consistent:
@@ -548,12 +555,12 @@ def register_cache_commands(
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"\n✗ Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
 
 __all__ = [
     "create_mysql_cache_adapter",
-    "create_token_cache_from_config",
     "create_sku_cache_from_config",
+    "create_token_cache_from_config",
     "register_cache_commands",
 ]

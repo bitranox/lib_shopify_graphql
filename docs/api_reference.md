@@ -398,9 +398,7 @@ Update multiple variants in one API call.
 
 ```python
 from decimal import Decimal
-from lib_shopify_graphql import (
-    update_variants_bulk, VariantUpdate, VariantUpdateRequest
-)
+from lib_shopify_graphql import update_variants_bulk, VariantUpdate, VariantUpdateRequest
 
 result = update_variants_bulk(
     session,
@@ -417,16 +415,22 @@ result = update_variants_bulk(
     ],
 )
 
-logger.info("Bulk update complete", extra={
-    "updated": result.success_count,
-    "failed": result.failure_count,
-})
+logger.info(
+    "Bulk update complete",
+    extra={
+        "updated": result.success_count,
+        "failed": result.failure_count,
+    },
+)
 
 for failure in result.failed:
-    logger.warning("Variant update failed", extra={
-        "identifier": failure.identifier,
-        "error": failure.error,
-    })
+    logger.warning(
+        "Variant update failed",
+        extra={
+            "identifier": failure.identifier,
+            "error": failure.error,
+        },
+    )
 ```
 
 ---
@@ -668,11 +672,15 @@ Create multiple product images in batch.
 ```python
 from lib_shopify_graphql import create_images, ImageSource
 
-result = create_images(session, product_id, [
-    ImageSource(url="https://example.com/1.jpg", alt_text="Front"),
-    ImageSource(url="https://example.com/2.jpg", alt_text="Back"),
-    ImageSource(file_path="/local/3.jpg", alt_text="Side"),
-])
+result = create_images(
+    session,
+    product_id,
+    [
+        ImageSource(url="https://example.com/1.jpg", alt_text="Front"),
+        ImageSource(url="https://example.com/2.jpg", alt_text="Back"),
+        ImageSource(file_path="/local/3.jpg", alt_text="Side"),
+    ],
+)
 print(f"Created: {result.success_count}, Failed: {result.failure_count}")
 
 for failure in result.failed:
@@ -858,18 +866,21 @@ Deletes metafields identified by owner + namespace + key. The operation is parti
 ```python
 from lib_shopify_graphql import delete_metafields, MetafieldIdentifier
 
-result = delete_metafields(session, [
-    MetafieldIdentifier(
-        owner_id="gid://shopify/Product/123",
-        namespace="custom",
-        key="old_field_1",
-    ),
-    MetafieldIdentifier(
-        owner_id="gid://shopify/Product/123",
-        namespace="custom",
-        key="old_field_2",
-    ),
-])
+result = delete_metafields(
+    session,
+    [
+        MetafieldIdentifier(
+            owner_id="gid://shopify/Product/123",
+            namespace="custom",
+            key="old_field_1",
+        ),
+        MetafieldIdentifier(
+            owner_id="gid://shopify/Product/123",
+            namespace="custom",
+            key="old_field_2",
+        ),
+    ],
+)
 print(f"Deleted: {result.deleted_count}, Failed: {result.failed_count}")
 ```
 
@@ -1025,13 +1036,13 @@ Full Shopify product data.
 ```python
 product = get_product_by_id(session, "123456789")
 
-print(product.id)           # gid://shopify/Product/123456789
-print(product.title)        # "My Product"
-print(product.handle)       # "my-product"
-print(product.status)       # ProductStatus.ACTIVE
-print(product.vendor)       # "My Vendor"
-print(product.tags)         # ["tag1", "tag2"]
-print(product.created_at)   # datetime object
+print(product.id)  # gid://shopify/Product/123456789
+print(product.title)  # "My Product"
+print(product.handle)  # "my-product"
+print(product.status)  # ProductStatus.ACTIVE
+print(product.vendor)  # "My Vendor"
+print(product.tags)  # ["tag1", "tag2"]
+print(product.created_at)  # datetime object
 
 # Access variants
 for variant in product.variants:
@@ -1368,10 +1379,13 @@ result = update_variants_bulk(session, product_id, requests)
 
 if not result.all_succeeded:
     for failure in result.failed:
-        logger.warning("Update failed", extra={
-            "identifier": failure.identifier,
-            "error": failure.error,
-        })
+        logger.warning(
+            "Update failed",
+            extra={
+                "identifier": failure.identifier,
+                "error": failure.error,
+            },
+        )
 ```
 
 ---
@@ -1579,17 +1593,20 @@ GraphQL query returned errors.
 try:
     product = get_product_by_id(session, "123")
 except GraphQLError as e:
-    logger.error("GraphQL error", extra={
-        "message": e.message,
-        "errors": [
-            {
-                "message": err.message,
-                "code": err.extensions.get("code") if err.extensions else None,
-                "path": err.path,
-            }
-            for err in e.errors
-        ],
-    })
+    logger.error(
+        "GraphQL error",
+        extra={
+            "message": e.message,
+            "errors": [
+                {
+                    "message": err.message,
+                    "code": err.extensions.get("code") if err.extensions else None,
+                    "path": err.path,
+                }
+                for err in e.errors
+            ],
+        },
+    )
 ```
 
 ---
@@ -1635,10 +1652,13 @@ from lib_shopify_graphql import GraphQLTimeoutError, DEFAULT_GRAPHQL_TIMEOUT_SEC
 try:
     product = get_product_by_id(session, "123")
 except GraphQLTimeoutError as e:
-    logger.error("Query timed out", extra={
-        "timeout": e.timeout,
-        "query_preview": e.query[:100] if e.query else None,
-    })
+    logger.error(
+        "Query timed out",
+        extra={
+            "timeout": e.timeout,
+            "query_preview": e.query[:100] if e.query else None,
+        },
+    )
 ```
 
 ---
@@ -1718,10 +1738,12 @@ from lib_shopify_graphql import login, create_adapters
 adapters = create_adapters()
 session = login(credentials, **adapters)
 
+
 # Using custom adapter for testing
 class FakeTokenProvider:
     def obtain_token(self, shop_url, client_id, client_secret):
         return ("fake_token", datetime.now() + timedelta(hours=24))
+
 
 adapters = create_adapters(token_provider=FakeTokenProvider())
 session = login(credentials, **adapters)
@@ -1755,9 +1777,11 @@ class SKUResolverPort(Protocol):
     def resolve(self, sku: str, shop_url: str) -> str | None:
         """Resolve SKU to GID. Raises AmbiguousSKUError if multiple matches."""
         ...
+
     def resolve_all(self, sku: str) -> list[str]:
         """Resolve SKU to ALL matching GIDs (no error on multiple matches)."""
         ...
+
     def invalidate(self, sku: str, shop_url: str) -> None: ...
 ```
 
@@ -1874,7 +1898,8 @@ Token provider that caches OAuth tokens to reduce authentication requests.
 
 ```python
 from lib_shopify_graphql import (
-    CachedTokenProvider, JsonFileCacheAdapter,
+    CachedTokenProvider,
+    JsonFileCacheAdapter,
     create_cached_token_provider,
 )
 from lib_shopify_graphql.adapters import ShopifyTokenProvider
@@ -1920,7 +1945,9 @@ sku_resolver = CachedSKUResolver(
 
 # Use with update functions
 update_variant(
-    session, "SKU-12345", update,
+    session,
+    "SKU-12345",
+    update,
     sku_resolver=sku_resolver,
 )
 ```
@@ -1947,7 +1974,9 @@ location_resolver = LocationResolver(
 
 # Use with inventory functions
 set_inventory(
-    session, "SKU-12345", 100,
+    session,
+    "SKU-12345",
+    100,
     location_resolver=location_resolver,
 )
 ```

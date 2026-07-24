@@ -157,7 +157,7 @@ class MySQLCacheAdapter:
         ImportError: If pymysql is not installed.
     """
 
-    def __init__(
+    def __init__(  # noqa: PLR0913 - public adapter constructor with independent MySQL connection knobs
         self,
         *,
         host: str = "localhost",
@@ -314,7 +314,7 @@ class MySQLCacheAdapter:
                 conn.close()
                 logger.debug("Closed MySQL connection for thread")
             except Exception as exc:
-                logger.warning(f"Error closing MySQL connection: {exc}")
+                logger.warning("Error closing MySQL connection: %s", exc)
             finally:
                 self._local.conn = None
 
@@ -333,9 +333,9 @@ class MySQLCacheAdapter:
             conn = self._create_connection(use_database=False)
             with conn.cursor() as cursor:
                 cursor.execute(create_sql)
-            logger.info(f"Ensured database '{self.database}' exists")
+            logger.info("Ensured database '%s' exists", self.database)
         except Exception as exc:
-            logger.error(f"Failed to create database '{self.database}': {exc}")
+            logger.error("Failed to create database '%s': %s", self.database, exc)
             raise
         finally:
             if conn is not None:
@@ -356,9 +356,9 @@ class MySQLCacheAdapter:
             conn = self._get_connection()
             with conn.cursor() as cursor:
                 cursor.execute(create_sql)
-            logger.info(f"Ensured cache table '{self.table_name}' exists")
+            logger.info("Ensured cache table '%s' exists", self.table_name)
         except Exception as exc:
-            logger.error(f"Failed to create cache table '{self.table_name}': {exc}")
+            logger.error("Failed to create cache table '%s': %s", self.table_name, exc)
             raise
 
     def get(self, key: str) -> str | None:
@@ -375,7 +375,7 @@ class MySQLCacheAdapter:
             SELECT `value` FROM `{self.table_name}`
             WHERE `cache_key` = %s
             AND (`expires_at` IS NULL OR `expires_at` > %s)
-        """  # nosec B608 - table_name is class attribute, not user input
+        """  # noqa: S608 - table_name is class attribute, not user input  # nosec B608 - table_name is class attribute, not user input
         try:
             conn = self._get_connection()
             with conn.cursor() as cursor:
@@ -383,7 +383,7 @@ class MySQLCacheAdapter:
                 row = cursor.fetchone()
                 return row[0] if row else None
         except Exception as exc:
-            logger.warning(f"Cache get error for key '{key}': {exc}")
+            logger.warning("Cache get error for key '%s': %s", key, exc)
             return None
 
     def set(self, key: str, value: str, ttl: int | None = None) -> None:
@@ -399,13 +399,13 @@ class MySQLCacheAdapter:
             INSERT INTO `{self.table_name}` (`cache_key`, `value`, `expires_at`)
             VALUES (%s, %s, %s)
             ON DUPLICATE KEY UPDATE `value` = VALUES(`value`), `expires_at` = VALUES(`expires_at`)
-        """  # nosec B608 - table_name is class attribute, not user input
+        """  # noqa: S608 - table_name is class attribute, not user input  # nosec B608 - table_name is class attribute, not user input
         try:
             conn = self._get_connection()
             with conn.cursor() as cursor:
                 cursor.execute(upsert_sql, (key, value, expires_at))
         except Exception as exc:
-            logger.warning(f"Cache set error for key '{key}': {exc}")
+            logger.warning("Cache set error for key '%s': %s", key, exc)
 
     def delete(self, key: str) -> None:
         """Remove a key from the cache.
@@ -413,13 +413,13 @@ class MySQLCacheAdapter:
         Args:
             key: Cache key to remove.
         """
-        delete_sql = f"DELETE FROM `{self.table_name}` WHERE `cache_key` = %s"  # nosec B608
+        delete_sql = f"DELETE FROM `{self.table_name}` WHERE `cache_key` = %s"  # noqa: S608 - table_name is class attribute, not user input  # nosec B608
         try:
             conn = self._get_connection()
             with conn.cursor() as cursor:
                 cursor.execute(delete_sql, (key,))
         except Exception as exc:
-            logger.warning(f"Cache delete error for key '{key}': {exc}")
+            logger.warning("Cache delete error for key '%s': %s", key, exc)
 
     def clear(self) -> None:
         """Clear all cached entries."""
@@ -429,7 +429,7 @@ class MySQLCacheAdapter:
             with conn.cursor() as cursor:
                 cursor.execute(truncate_sql)
         except Exception as exc:
-            logger.warning(f"Cache clear error: {exc}")
+            logger.warning("Cache clear error: %s", exc)
 
     def cleanup_expired(self) -> int:
         """Remove all expired entries from the cache.
@@ -441,14 +441,14 @@ class MySQLCacheAdapter:
         delete_sql = f"""
             DELETE FROM `{self.table_name}`
             WHERE `expires_at` IS NOT NULL AND `expires_at` <= %s
-        """  # nosec B608 - table_name is class attribute, not user input
+        """  # noqa: S608 - table_name is class attribute, not user input  # nosec B608 - table_name is class attribute, not user input
         try:
             conn = self._get_connection()
             with conn.cursor() as cursor:
                 cursor.execute(delete_sql, (now,))
                 return cursor.rowcount
         except Exception as exc:
-            logger.warning(f"Cache cleanup error: {exc}")
+            logger.warning("Cache cleanup error: %s", exc)
             return 0
 
     def keys(self, prefix: str | None = None) -> list[str]:
@@ -472,17 +472,17 @@ class MySQLCacheAdapter:
                         SELECT `cache_key` FROM `{self.table_name}`
                         WHERE `cache_key` LIKE %s
                         AND (`expires_at` IS NULL OR `expires_at` > %s)
-                    """  # nosec B608 - table_name is class attribute, not user input
+                    """  # noqa: S608 - table_name is class attribute, not user input  # nosec B608 - table_name is class attribute, not user input
                     cursor.execute(select_sql, (escaped_prefix + "%", now))
                 else:
                     select_sql = f"""
                         SELECT `cache_key` FROM `{self.table_name}`
                         WHERE (`expires_at` IS NULL OR `expires_at` > %s)
-                    """  # nosec B608 - table_name is class attribute, not user input
+                    """  # noqa: S608 - table_name is class attribute, not user input  # nosec B608 - table_name is class attribute, not user input
                     cursor.execute(select_sql, (now,))
                 return [row[0] for row in cursor.fetchall()]
         except Exception as exc:
-            logger.warning(f"Cache keys error: {exc}")
+            logger.warning("Cache keys error: %s", exc)
             return []
 
     def __enter__(self) -> MySQLCacheAdapter:
@@ -523,8 +523,8 @@ class MySQLCacheAdapter:
 
 
 __all__ = [
+    "PYMYSQL_AVAILABLE",
     "MySQLCacheAdapter",
     "MySQLConnectionParams",
-    "PYMYSQL_AVAILABLE",
     "parse_mysql_connection_string",
 ]

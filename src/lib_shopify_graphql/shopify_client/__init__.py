@@ -70,17 +70,20 @@ from ._variants import update_product, update_variant
 from ._variants_bulk import update_variants_bulk
 
 __all__ = [
-    "ShopifySession",
     # Cache operations
     "CacheCheckResult",
     "CacheMismatch",
+    "ShopifySession",
+    # Update operations
+    "adjust_inventory",
     "cache_clear_all",
-    "skucache_check",
-    "skucache_clear",
-    "skucache_rebuild",
-    "tokencache_clear",
+    # Image operations
+    "create_image",
+    "create_images",
     # Create operations
     "create_product",
+    "delete_image",
+    "delete_images",
     # Delete operations
     "delete_metafield",
     "delete_metafields",
@@ -97,17 +100,14 @@ __all__ = [
     # Session operations
     "login",
     "logout",
-    # Update operations
-    "adjust_inventory",
+    "reorder_images",
     "set_inventory",
+    "skucache_check",
+    "skucache_clear",
+    "skucache_rebuild",
+    "tokencache_clear",
+    "update_image",
     "update_product",
     "update_variant",
     "update_variants_bulk",
-    # Image operations
-    "create_image",
-    "create_images",
-    "delete_image",
-    "delete_images",
-    "reorder_images",
-    "update_image",
 ]

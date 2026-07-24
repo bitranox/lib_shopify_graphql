@@ -9,11 +9,10 @@ from __future__ import annotations
 
 import runpy
 from pathlib import Path
-
-import rtoml
 from typing import Any, cast
 
 import pytest
+import rtoml
 
 PROJECT_ROOT = Path(__file__).resolve().parent.parent
 PYPROJECT_PATH = PROJECT_ROOT / "pyproject.toml"
@@ -32,12 +31,12 @@ def _load_pyproject() -> dict[str, Any]:
 
 def _resolve_init_conf_path(pyproject: dict[str, Any]) -> Path:
     """Find the __init__conf__.py path from pyproject.toml configuration."""
-    project_table = cast(dict[str, Any], pyproject["project"])
-    tool_table = cast(dict[str, Any], pyproject.get("tool", {}))
-    hatch_table = cast(dict[str, Any], tool_table.get("hatch", {}))
-    targets_table = cast(dict[str, Any], cast(dict[str, Any], hatch_table.get("build", {})).get("targets", {}))
-    wheel_table = cast(dict[str, Any], targets_table.get("wheel", {}))
-    packages = cast(list[Any], wheel_table.get("packages", []))
+    project_table = cast("dict[str, Any]", pyproject["project"])
+    tool_table = cast("dict[str, Any]", pyproject.get("tool", {}))
+    hatch_table = cast("dict[str, Any]", tool_table.get("hatch", {}))
+    targets_table = cast("dict[str, Any]", cast("dict[str, Any]", hatch_table.get("build", {})).get("targets", {}))
+    wheel_table = cast("dict[str, Any]", targets_table.get("wheel", {}))
+    packages = cast("list[Any]", wheel_table.get("packages", []))
 
     for package_entry in packages:
         if isinstance(package_entry, str):
@@ -66,7 +65,7 @@ def _load_init_conf_metadata(init_conf_path: Path) -> dict[str, str]:
         raise AssertionError("No metadata assignments found in __init__conf__.py")
     metadata_text = "[metadata]\n" + "\n".join(fragments)
     parsed = rtoml.loads(metadata_text)
-    metadata_table = cast(dict[str, str], parsed["metadata"])
+    metadata_table = cast("dict[str, str]", parsed["metadata"])
     return metadata_table
 
 
@@ -124,7 +123,7 @@ class TestMetadataSynchronization:
     @pytest.fixture
     def project_table(self, pyproject: dict[str, Any]) -> dict[str, Any]:
         """Extract the project table from pyproject.toml."""
-        return cast(dict[str, Any], pyproject["project"])
+        return cast("dict[str, Any]", pyproject["project"])
 
     def test_name_matches_project(
         self,
@@ -156,7 +155,7 @@ class TestMetadataSynchronization:
         project_table: dict[str, Any],
     ) -> None:
         """The homepage constant matches the project homepage URL."""
-        urls = cast(dict[str, str], project_table.get("urls", {}))
+        urls = cast("dict[str, str]", project_table.get("urls", {}))
         assert "Homepage" in urls, "pyproject.toml must define project.urls.Homepage"
         assert metadata["homepage"] == urls["Homepage"]
 
@@ -166,7 +165,7 @@ class TestMetadataSynchronization:
         project_table: dict[str, Any],
     ) -> None:
         """The author constant matches the first author name."""
-        authors = cast(list[dict[str, str]], project_table.get("authors", []))
+        authors = cast("list[dict[str, str]]", project_table.get("authors", []))
         assert authors, "pyproject.toml must declare at least one author entry"
         assert metadata["author"] == authors[0]["name"]
 
@@ -176,7 +175,7 @@ class TestMetadataSynchronization:
         project_table: dict[str, Any],
     ) -> None:
         """The author_email constant matches the first author email."""
-        authors = cast(list[dict[str, str]], project_table.get("authors", []))
+        authors = cast("list[dict[str, str]]", project_table.get("authors", []))
         assert authors, "pyproject.toml must declare at least one author entry"
         assert metadata["author_email"] == authors[0]["email"]
 
@@ -186,5 +185,5 @@ class TestMetadataSynchronization:
         project_table: dict[str, Any],
     ) -> None:
         """The shell_command constant exists in project scripts."""
-        scripts = cast(dict[str, Any], project_table.get("scripts", {}))
+        scripts = cast("dict[str, Any]", project_table.get("scripts", {}))
         assert metadata["shell_command"] in scripts

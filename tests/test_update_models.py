@@ -13,6 +13,7 @@ from __future__ import annotations
 from decimal import Decimal
 
 import pytest
+from pydantic import ValidationError
 
 from lib_shopify_graphql.models import (
     UNSET,
@@ -30,7 +31,6 @@ from lib_shopify_graphql.models import (
     VariantUpdateRequest,
     WeightUnit,
 )
-
 
 # =============================================================================
 # UnsetType Sentinel Tests
@@ -98,7 +98,7 @@ class TestUnsetTypeComparison:
     def test_is_not_none(self) -> None:
         """UNSET is not None."""
         assert UNSET is not None
-        assert UNSET != None  # noqa: E711
+        assert UNSET != None  # noqa: E711 - deliberately exercises __ne__, not identity (see test_is_comparison_works above)
 
     def test_distinguishes_from_none(self) -> None:
         """UNSET and None are different values."""
@@ -229,7 +229,7 @@ class TestVariantUpdateImmutability:
         """Attempting to modify price raises an error."""
         update = VariantUpdate(price=Decimal("29.99"))
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             update.price = Decimal("39.99")  # type: ignore[misc]
 
 

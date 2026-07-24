@@ -14,6 +14,7 @@ from pathlib import Path
 from unittest.mock import MagicMock
 
 import pytest
+from pydantic import ValidationError
 
 from lib_shopify_graphql import (
     ImageCreateFailure,
@@ -29,14 +30,13 @@ from lib_shopify_graphql import (
     SessionNotActiveError,
     StagedUploadTarget,
 )
-from lib_shopify_graphql.models._images import StagedUploadParameter
 from lib_shopify_graphql.adapters.parsers import (
     parse_media_from_mutation,
     parse_media_user_errors,
     parse_staged_upload_target,
 )
+from lib_shopify_graphql.models._images import StagedUploadParameter
 from lib_shopify_graphql.models._internal import UNSET
-
 
 # =============================================================================
 # ImageSource Model Tests
@@ -87,7 +87,7 @@ class TestImageSourceValidation:
         """ImageSource is immutable."""
         source = ImageSource(url="https://example.com/image.jpg")
 
-        with pytest.raises(Exception):  # ValidationError for frozen model
+        with pytest.raises(ValidationError):
             source.url = "https://other.com/image.jpg"  # type: ignore[misc]
 
 

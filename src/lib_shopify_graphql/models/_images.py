@@ -11,12 +11,15 @@ This module provides models for creating, updating, and deleting product images:
 from __future__ import annotations
 
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import Self
 
 from ._enums import MediaStatus
 from ._internal import UNSET, Updatable
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 class ImageSource(BaseModel):

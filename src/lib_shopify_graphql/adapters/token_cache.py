@@ -177,7 +177,7 @@ class CachedTokenProvider:
 
             # Validate timestamp bounds before conversion
             if not (0 <= token_data.expires_at <= max_valid_timestamp):
-                logger.warning(f"Invalid expires_at timestamp in cached token: expires_at={token_data.expires_at}")
+                logger.warning("Invalid expires_at timestamp in cached token: expires_at=%s", token_data.expires_at)
                 return None
 
             expires_at = datetime.fromtimestamp(token_data.expires_at, tz=timezone.utc)
@@ -191,7 +191,7 @@ class CachedTokenProvider:
             return token_data.access_token, expires_at
 
         except (TypeError, ValueError, OverflowError, OSError) as exc:
-            logger.warning(f"Failed to parse cached token: {exc}")
+            logger.warning("Failed to parse cached token: %s", exc)
             return None
 
     def _cache_token(
@@ -231,7 +231,7 @@ class CachedTokenProvider:
             self.cache.set(cache_key, token_data.model_dump_json(), ttl=ttl)
 
         except Exception as exc:
-            logger.warning(f"Failed to cache token: {exc}")
+            logger.warning("Failed to cache token: %s", exc)
 
     def invalidate(self, shop_url: str, client_id: str) -> None:
         """Remove a token from cache.

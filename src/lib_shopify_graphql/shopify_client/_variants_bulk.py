@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..application.ports import SKUResolverPort
+    from ._session import ShopifySession
 
 from ..adapters.mutations import PRODUCT_VARIANTS_BULK_UPDATE_MUTATION
 from ..adapters.parsers import (
@@ -20,7 +21,6 @@ from ..exceptions import GraphQLError, SessionNotActiveError, VariantNotFoundErr
 from ..models import BulkUpdateResult, UpdateFailure, UpdateSuccess, VariantUpdateRequest
 from ..models._operations import UserErrorData, VariantMutationResult, VariantsBulkUpdateResponse
 from ._common import _check_graphql_errors, _get_session_sku_resolver, _normalize_product_gid, _normalize_variant_gid, _resolve_variant_identifier
-from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
 
@@ -180,7 +180,7 @@ def update_variants_bulk(
     shop_url = session.get_credentials().shop_url
     product_gid = _normalize_product_gid(product_id)
     resolver = _get_session_sku_resolver(session, sku_resolver)
-    logger.info(f"Bulk updating {len(updates)} variant(s) for product '{product_gid}'")
+    logger.info("Bulk updating %s variant(s) for product '%s'", len(updates), product_gid)
 
     variant_inputs, identifier_map, failed = _resolve_and_build_variant_inputs(updates, shop_url, resolver)
 

@@ -17,8 +17,6 @@ import lib_log_rich.runtime
 import orjson
 import rich_click as click
 
-from .typed_click import argument, option
-
 from ..enums import OutputFormat
 from ..exceptions import AuthenticationError, GraphQLError, ProductNotFoundError
 from ..models import ImageReorderResult, ImageSource, ImageUpdate
@@ -29,11 +27,15 @@ from ..shopify_client import (
     update_image,
 )
 from ._common import CLICK_CONTEXT_SETTINGS, EnumChoice, get_effective_config_and_profile, shopify_session
+from .typed_click import argument, option
 
 if TYPE_CHECKING:
     from ..shopify_client import ShopifySession
 
 logger = logging.getLogger(__name__)
+
+#: Reordering requires at least two images - a single image has nothing to reorder against.
+_MIN_IMAGES_FOR_REORDER = 2
 
 
 # =============================================================================
@@ -124,6 +126,7 @@ def register_image_commands(
     @click.pass_context
     def cli_add_image(
         ctx: click.Context,
+        *,
         product_id: str,
         urls: tuple[str, ...],
         files: tuple[str, ...],
@@ -140,22 +143,22 @@ def register_image_commands(
         extra = {"command": "add-image", "profile": effective_profile, "product_id": product_id}
 
         with lib_log_rich.runtime.bind(job_id="cli-add-image", extra=extra):
-            logger.info(f"Adding image(s) to product '{product_id}': {len(urls)} URL(s), {len(files)} file(s)")
+            logger.info("Adding image(s) to product '%s': %s URL(s), %s file(s)", product_id, len(urls), len(files))
 
             credentials = get_credentials_or_exit(config)
 
             try:
                 with shopify_session(credentials) as session:
                     results = _create_images_from_sources(session, product_id, urls, files, alt)
-                    logger.info(f"Images added: {len(results)} image(s)")
+                    logger.info("Images added: %s image(s)", len(results))
                     _output_add_image_results(results, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
     @cli_group.command("delete-image", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -195,7 +198,7 @@ def register_image_commands(
         }
 
         with lib_log_rich.runtime.bind(job_id="cli-delete-image", extra=extra):
-            logger.info(f"Deleting image '{image_id}' from product '{product_id}'")
+            logger.info("Deleting image '%s' from product '%s'", image_id, product_id)
 
             credentials = get_credentials_or_exit(config)
 
@@ -203,7 +206,7 @@ def register_image_commands(
                 with shopify_session(credentials) as session:
                     result = delete_image(session, product_id, image_id)
                     deleted_ids = result.deleted_image_ids + result.deleted_media_ids
-                    logger.info(f"Image deleted: {deleted_ids}")
+                    logger.info("Image deleted: %s", deleted_ids)
 
                     if output_format == OutputFormat.JSON:
                         data = {
@@ -217,11 +220,11 @@ def register_image_commands(
 
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
     @cli_group.command("update-image", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -238,6 +241,7 @@ def register_image_commands(
     @click.pass_context
     def cli_update_image(
         ctx: click.Context,
+        *,
         product_id: str,
         image_id: str,
         alt: str,
@@ -261,7 +265,7 @@ def register_image_commands(
         }
 
         with lib_log_rich.runtime.bind(job_id="cli-update-image", extra=extra):
-            logger.info(f"Updating image '{image_id}' on product '{product_id}'")
+            logger.info("Updating image '%s' on product '%s'", image_id, product_id)
 
             credentials = get_credentials_or_exit(config)
 
@@ -269,7 +273,7 @@ def register_image_commands(
                 with shopify_session(credentials) as session:
                     image_update = ImageUpdate(alt_text=alt)
                     result = update_image(session, product_id, image_id, image_update)
-                    logger.info(f"Image updated: id='{result.image_id}'")
+                    logger.info("Image updated: id='%s'", result.image_id)
 
                     if output_format == OutputFormat.JSON:
                         data = {
@@ -285,11 +289,11 @@ def register_image_commands(
 
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
     @cli_group.command("reorder-images", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -312,7 +316,7 @@ def register_image_commands(
     ) -> None:
         """Reorder product images."""
         image_ids = _parse_image_ids(order)
-        if len(image_ids) < 2:
+        if len(image_ids) < _MIN_IMAGES_FOR_REORDER:
             click.echo("Error: At least 2 image IDs required for reordering", err=True)
             raise SystemExit(1)
 
@@ -320,27 +324,27 @@ def register_image_commands(
         extra = {"command": "reorder-images", "profile": effective_profile, "product_id": product_id}
 
         with lib_log_rich.runtime.bind(job_id="cli-reorder-images", extra=extra):
-            logger.info(f"Reordering {len(image_ids)} image(s) for product '{product_id}'")
+            logger.info("Reordering %s image(s) for product '%s'", len(image_ids), product_id)
 
             credentials = get_credentials_or_exit(config)
 
             try:
                 with shopify_session(credentials) as session:
                     result = reorder_images(session, product_id, image_ids)
-                    logger.info(f"Images reordered for product '{result.product_id}' (job_id='{result.job_id}')")
+                    logger.info("Images reordered for product '%s' (job_id='%s')", result.product_id, result.job_id)
                     _output_reorder_result(result, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
 
 __all__ = [
-    "register_image_commands",
     # Internal functions exported for tests
     "_output_reorder_result",
     "_parse_image_ids",
+    "register_image_commands",
 ]

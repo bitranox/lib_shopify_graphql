@@ -16,8 +16,10 @@ from datetime import datetime, timezone
 from decimal import Decimal
 
 import pytest
+from pydantic import ValidationError
 
 from lib_shopify_graphql.models import (
+    SEO,
     InventoryPolicy,
     Metafield,
     MetafieldType,
@@ -28,12 +30,10 @@ from lib_shopify_graphql.models import (
     ProductOption,
     ProductStatus,
     ProductVariant,
-    SEO,
     SelectedOption,
     ShopifyCredentials,
     ShopifySessionInfo,
 )
-
 
 # =============================================================================
 # ShopifyCredentials Tests
@@ -167,7 +167,7 @@ class TestShopifyCredentialsValidation:
 
     def test_rejects_private_ip_address(self) -> None:
         """Private IP addresses are rejected (SSRF protection)."""
-        with pytest.raises(ValueError, match="private.*loopback.*reserved"):
+        with pytest.raises(ValueError, match=r"private.*loopback.*reserved"):
             ShopifyCredentials(
                 shop_url="192.168.1.1",
                 client_id="test_client_id",
@@ -176,7 +176,7 @@ class TestShopifyCredentialsValidation:
 
     def test_rejects_loopback_ip_address(self) -> None:
         """Loopback IP addresses are rejected (SSRF protection)."""
-        with pytest.raises(ValueError, match="private.*loopback.*reserved"):
+        with pytest.raises(ValueError, match=r"private.*loopback.*reserved"):
             ShopifyCredentials(
                 shop_url="127.0.0.1",
                 client_id="test_client_id",
@@ -232,7 +232,7 @@ class TestShopifyCredentialsImmutability:
             client_secret="test_client_secret",
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             creds.shop_url = "other.myshopify.com"  # type: ignore[misc]
 
     def test_cannot_modify_client_id(self) -> None:
@@ -243,7 +243,7 @@ class TestShopifyCredentialsImmutability:
             client_secret="test_client_secret",
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             creds.client_id = "new_client_id"  # type: ignore[misc]
 
 
@@ -305,14 +305,14 @@ class TestMoneyImmutability:
         """Attempting to modify amount raises an error."""
         money = Money(amount=Decimal("19.99"), currency_code="USD")
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             money.amount = Decimal("29.99")  # type: ignore[misc]
 
     def test_cannot_modify_currency_code(self) -> None:
         """Attempting to modify currency_code raises an error."""
         money = Money(amount=Decimal("19.99"), currency_code="USD")
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             money.currency_code = "EUR"  # type: ignore[misc]
 
 
@@ -661,7 +661,7 @@ class TestShopifySessionInfoImmutability:
             api_version="2026-01",
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             info.is_active = False  # type: ignore[misc]
 
     def test_cannot_modify_shop_url(self) -> None:
@@ -671,7 +671,7 @@ class TestShopifySessionInfoImmutability:
             api_version="2026-01",
         )
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             info.shop_url = "other.myshopify.com"  # type: ignore[misc]
 
 
@@ -859,7 +859,7 @@ class TestSelectedOptionCreation:
         """SelectedOption is frozen and cannot be modified."""
         option = SelectedOption(name="Size", value="Large")
 
-        with pytest.raises(Exception):
+        with pytest.raises(ValidationError):
             option.name = "Color"  # type: ignore[misc]
 
 

@@ -24,7 +24,6 @@ from lib_shopify_graphql.adapters.location_resolver import (
     LocationResolver,
 )
 
-
 # =============================================================================
 # Test Fixtures
 # =============================================================================
@@ -50,7 +49,7 @@ class FakeLocationGraphQLClient:
 
         return {"data": {"locations": {"edges": [{"node": loc} for loc in self.locations]}}}
 
-    def add_location(self, location_id: str, name: str, is_active: bool = True, is_primary: bool = False) -> None:
+    def add_location(self, location_id: str, name: str, *, is_active: bool = True, is_primary: bool = False) -> None:
         """Add a location to the fake response."""
         self.locations.append(
             {

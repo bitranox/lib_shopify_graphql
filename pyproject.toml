@@ -1,6 +1,6 @@
 [project]
 name = "lib_shopify_graphql"
-version = "2.0.7"
+version = "2.0.8"
 description = "Python library for Shopify GraphQL API interactions"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -14,12 +14,12 @@ dependencies = [
     # `make test` and rewrites every floor to the current release, so lowering it by hand does
     # not stick - the next `make test` puts it back.
     "click>=8.4.2",
-    "lib_cli_exit_tools>=2.3.2",
-    "lib_log_rich>=6.3.5",
-    "lib_layered_config>=5.6.0",
-    "filelock>=3.29.7",
+    "lib_cli_exit_tools>=2.3.3",
+    "lib_log_rich>=6.3.6",
+    "lib_layered_config>=5.6.1",
+    "filelock>=3.32.0",
     "orjson>=3.11.9",
-    "httpx2>=2.6.0",
+    "httpx2>=2.9.1",
     "pydantic>=2.13.4",
 ]
 license = { text = "MIT" }
@@ -56,7 +56,7 @@ Issues = "https://github.com/bitranox/lib_shopify_graphql/issues"
 dev = [
   "pytest>=9.1.1",
   "pytest-cov>=7.1.0",
-  "ruff>=0.15.21",
+  "ruff>=0.16.0",
   "pyright[nodejs]>=1.1.411",
   "bandit>=1.9.4",
   # 1.5.1 was yanked upstream (unintended breaking changes), so 1.5.0 is the newest usable
@@ -97,12 +97,58 @@ include = ["src/lib_shopify_graphql/py.typed", "src/lib_shopify_graphql/defaultc
 line-length = 160
 target-version = "py310"
 
+[tool.ruff.lint]
+select = [
+  "E", "W",     # pycodestyle
+  "F",           # pyflakes
+  "I",           # isort
+  "N",           # pep8-naming
+  "UP",          # pyupgrade
+  "B",           # bugbear
+  "A",           # builtins shadowing
+  "C4",          # comprehension simplification
+  "SIM",         # simplification
+  "TCH",         # type-checking imports
+  "RUF",         # ruff-specific
+  "G",           # logging format (catches f-string in logger)
+  "T20",         # print statements
+  "PTH",         # pathlib preference
+  "PLC", "PLE",  # pylint conventions/errors
+  "S",           # flake8-bandit security checks
+  "PERF",        # performance anti-patterns
+  "ERA",         # eradicate dead/commented-out code
+  "FBT",         # boolean trap (boolean positional args)
+  "PLR",         # pylint refactor
+  "PLW",         # pylint warnings
+]
+
 [tool.ruff.lint.pydocstyle]
 convention = "google"
 
+[tool.ruff.lint.flake8-type-checking]
+# The Pydantic models under models/, adapters/ (token_cache, sku_resolver), and
+# cli/_common.py resolve their field annotations at model-build time, so their
+# field-type imports must stay at runtime even under `from __future__ import
+# annotations`. Telling ruff about the Pydantic base keeps TC001/TC002/TC003 from
+# moving those imports into a TYPE_CHECKING block and breaking model construction.
+runtime-evaluated-base-classes = ["pydantic.BaseModel"]
+
 [tool.ruff.lint.per-file-ignores]
 # ignore the "unused import sys" in the jupyter notebook - which we need (it is a linter hickup)
-"notebooks/*.ipynb" = ["F401"]
+# T20: the whole point of a demo/tutorial notebook is printing visible output per cell.
+"notebooks/*.ipynb" = ["F401", "T20"]
+# Tests: assert is standard, test fixtures have passwords, magic values are clearer inline, temp
+# paths are fine. PLC0415: several tests import inside the test body to exercise import-time and
+# cache behaviour, so moving them to module top would defeat intent.
+"tests/*.py" = ["S101", "S105", "S106", "S108", "T20", "PLR2004", "PLR0913", "FBT001", "FBT003", "PLC0415"]
+# conftest.py deliberately loads .env before importing modules that read env vars at import time.
+"tests/conftest.py" = ["E402"]
+# CLI: Click commands have one function param per --option, and the option-builder helpers that
+# assemble a full ProductCreate/ProductUpdate from those options mirror the same field count.
+# PLR0915: register_*_commands defines several nested Click callbacks that share dependencies
+# (get_credentials_or_exit, etc.) via closure - the statement count is the sum of every
+# registered command's body, not one function doing too much.
+"src/lib_shopify_graphql/cli/**/*.py" = ["PLR0913", "PLR0915"]
 
 [tool.pyright]
 typeCheckingMode = "strict"

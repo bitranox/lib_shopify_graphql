@@ -7,7 +7,7 @@ into typed models.
 from __future__ import annotations
 
 from decimal import Decimal
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 from ...models import (
     CurrencyCode,
@@ -19,8 +19,11 @@ from ...models import (
     StagedUploadTarget,
     UpdateFailure,
 )
-from ...models._operations import VariantMutationResult
+from ...models._images import StagedUploadParameter
 from ._products import parse_datetime, parse_inventory_policy, parse_money
+
+if TYPE_CHECKING:
+    from ...models._operations import VariantMutationResult
 
 
 def parse_user_errors(user_errors: list[dict[str, Any]]) -> list[UpdateFailure]:
@@ -104,8 +107,6 @@ def parse_staged_upload_target(data: dict[str, Any]) -> StagedUploadTarget:
     Returns:
         StagedUploadTarget with url, resource_url, and parameters.
     """
-    from ...models._images import StagedUploadParameter, StagedUploadTarget
-
     params = [StagedUploadParameter(name=p["name"], value=p["value"]) for p in data.get("parameters", [])]
     return StagedUploadTarget(
         url=data["url"],

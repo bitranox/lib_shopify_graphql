@@ -6,6 +6,7 @@ This module provides metafield deletion functionality.
 from __future__ import annotations
 
 import logging
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -14,9 +15,14 @@ from ..exceptions import GraphQLError, SessionNotActiveError
 from ..models import MetafieldDeleteFailure, MetafieldDeleteResult, MetafieldIdentifier
 from ..models._operations import UserErrorData
 from ._common import _check_graphql_errors, _normalize_owner_gid
-from ._session import ShopifySession
+
+if TYPE_CHECKING:
+    from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
+
+#: Minimum error field_path length to contain both the "metafields" segment and an index.
+_METAFIELD_ERROR_PATH_MIN_LENGTH = 2
 
 
 # =============================================================================
@@ -109,7 +115,7 @@ def _find_identifier_for_error(
     Returns:
         The matching MetafieldIdentifier, or None if not found.
     """
-    if len(field_path) >= 2 and field_path[0] == "metafields":
+    if len(field_path) >= _METAFIELD_ERROR_PATH_MIN_LENGTH and field_path[0] == "metafields":
         idx_str = field_path[1]
         # Array indices are normalized to strings, try parsing as int
         try:
@@ -254,7 +260,7 @@ def delete_metafields(
     if not metafields:
         return MetafieldDeleteResult(deleted=[], failed=[])
 
-    logger.info(f"Deleting {len(metafields)} metafield(s) on shop '{session.get_credentials().shop_url}'")
+    logger.info("Deleting %s metafield(s) on shop '%s'", len(metafields), session.get_credentials().shop_url)
 
     try:
         mutation_input = _build_metafield_delete_input(metafields)
@@ -275,7 +281,7 @@ def delete_metafields(
         deleted = _parse_deleted_metafields(mutation_data.deleted_metafields)
         failed = _process_delete_user_errors(mutation_data.user_errors, metafields)
 
-        logger.info(f"Metafield deletion complete: {len(deleted)} deleted, {len(failed)} failed")
+        logger.info("Metafield deletion complete: %s deleted, %s failed", len(deleted), len(failed))
         return MetafieldDeleteResult(deleted=deleted, failed=failed)
 
     except GraphQLError:

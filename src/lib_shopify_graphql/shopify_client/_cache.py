@@ -12,6 +12,11 @@ from dataclasses import dataclass, field
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
+from ..adapters.cache_json import JsonFileCacheAdapter
+from ..adapters.sku_resolver import CachedSKUResolver, SKUCacheEntry
+from ..exceptions import SessionNotActiveError
+from ._products import skucache_rebuild
+
 if TYPE_CHECKING:
     from ..application.ports import CachePort
     from ._session import ShopifySession
@@ -154,8 +159,6 @@ def cache_clear_all(
 
 def _read_cache_entries(cache: CachePort, sku_prefix: str) -> dict[str, Any]:
     """Read and parse all SKU cache entries with the given prefix."""
-    from ..adapters.sku_resolver import SKUCacheEntry
-
     entries: dict[str, Any] = {}
     for key in cache.keys(prefix=sku_prefix):
         value = cache.get(key)
@@ -165,7 +168,7 @@ def _read_cache_entries(cache: CachePort, sku_prefix: str) -> dict[str, Any]:
         try:
             entries[sku] = SKUCacheEntry.model_validate_json(value)
         except ValueError:
-            logger.debug(f"Invalid cache entry for key '{key}', skipping")
+            logger.debug("Invalid cache entry for key '%s', skipping", key)
     return entries
 
 
@@ -175,16 +178,12 @@ def _rebuild_to_temp_cache(
     query: str | None,
 ) -> dict[str, Any]:
     """Rebuild SKU cache from Shopify into a temporary file and return entries."""
-    from ..adapters.cache_json import JsonFileCacheAdapter
-    from ..adapters.sku_resolver import CachedSKUResolver
-    from ._products import skucache_rebuild
-
     with tempfile.TemporaryDirectory() as tmpdir:
         temp_cache = JsonFileCacheAdapter(Path(tmpdir) / "temp_sku_cache.json")
         temp_resolver = CachedSKUResolver(temp_cache, session._graphql_client)
 
         total = skucache_rebuild(session, sku_resolver=temp_resolver, query=query)
-        logger.info(f"Rebuilt {total} variants from Shopify")
+        logger.info("Rebuilt %s variants from Shopify", total)
 
         return _read_cache_entries(temp_cache, sku_prefix)
 
@@ -251,8 +250,6 @@ def skucache_check(
         else:
             print(f"Found {len(result.stale)} stale entries")
     """
-    from ..exceptions import SessionNotActiveError
-
     if not session.is_active:
         raise SessionNotActiveError("Session is not active.")
 
@@ -261,7 +258,7 @@ def skucache_check(
 
     logger.info("Reading entries from actual cache")
     actual_entries = _read_cache_entries(cache, sku_prefix)
-    logger.info(f"Found {len(actual_entries)} entries in actual cache")
+    logger.info("Found %s entries in actual cache", len(actual_entries))
 
     logger.info("Rebuilding cache from Shopify into temporary file")
     shopify_entries = _rebuild_to_temp_cache(session, sku_prefix, query)
@@ -275,7 +272,7 @@ def skucache_check(
     mismatched = _find_mismatches(actual_entries, shopify_entries, common)
     valid = len(common) - len(mismatched)
 
-    logger.info(f"Cache check complete: {valid} valid, {len(stale)} stale, {len(missing)} missing, {len(mismatched)} mismatched")
+    logger.info("Cache check complete: %s valid, %s stale, %s missing, %s mismatched", valid, len(stale), len(missing), len(mismatched))
 
     return CacheCheckResult(
         total_cached=len(actual_entries),

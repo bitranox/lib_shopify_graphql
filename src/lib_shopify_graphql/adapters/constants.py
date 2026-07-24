@@ -8,11 +8,10 @@ All values can be overridden via configuration (see defaultconfig.toml).
 
 from __future__ import annotations
 
+import os
+import sys
 from functools import lru_cache
-from typing import TYPE_CHECKING
-
-if TYPE_CHECKING:
-    from pathlib import Path
+from pathlib import Path
 
 # =============================================================================
 # Time Constants (in seconds)
@@ -62,7 +61,7 @@ DEFAULT_MYSQL_PORT: int = 3306
 # =============================================================================
 
 #: Default table name for token cache in MySQL
-DEFAULT_TOKEN_CACHE_TABLE: str = "token_cache"
+DEFAULT_TOKEN_CACHE_TABLE: str = "token_cache"  # noqa: S105 - a MySQL table name, not a credential
 
 #: Default table name for SKU cache in MySQL
 DEFAULT_SKU_CACHE_TABLE: str = "sku_cache"
@@ -95,16 +94,11 @@ def get_default_cache_dir() -> Path:
     Returns:
         Path to the default cache directory.
     """
-    import sys
-    from pathlib import Path
-
     if sys.platform == "darwin":
         # macOS: ~/Library/Caches/lib-shopify-graphql/
         return Path.home() / "Library" / "Caches" / CACHE_APP_NAME
     elif sys.platform == "win32":
-        # Windows: %LOCALAPPDATA%\lib-shopify-graphql\
-        import os
-
+        # Windows path: %LOCALAPPDATA%\lib-shopify-graphql\
         local_app_data = os.environ.get("LOCALAPPDATA", "")
         if local_app_data:
             return Path(local_app_data) / CACHE_APP_NAME
@@ -112,8 +106,6 @@ def get_default_cache_dir() -> Path:
         return Path.home() / "AppData" / "Local" / CACHE_APP_NAME
     else:
         # Linux/Unix: ~/.cache/lib-shopify-graphql/ (XDG spec)
-        import os
-
         xdg_cache = os.environ.get("XDG_CACHE_HOME", "")
         if xdg_cache:
             return Path(xdg_cache) / CACHE_APP_NAME
@@ -143,25 +135,25 @@ def get_default_sku_cache_path() -> Path:
 # =============================================================================
 
 __all__ = [
-    # Time constants
-    "DEFAULT_TOKEN_REFRESH_MARGIN_SECONDS",
-    "DEFAULT_TOKEN_EXPIRES_IN_SECONDS",
-    "DEFAULT_SKU_CACHE_TTL_SECONDS",
-    # Lock/timeout constants
-    "DEFAULT_LOCK_TIMEOUT_SECONDS",
-    "DEFAULT_CACHE_RETRY_COUNT",
-    "DEFAULT_MYSQL_CONNECT_TIMEOUT_SECONDS",
-    "DEFAULT_GRAPHQL_TIMEOUT_SECONDS",
-    # Network constants
-    "DEFAULT_MYSQL_PORT",
-    # Cache table names
-    "DEFAULT_TOKEN_CACHE_TABLE",
-    "DEFAULT_SKU_CACHE_TABLE",
-    # Currency
-    "DEFAULT_CURRENCY_CODE",
     # Cache paths
     "CACHE_APP_NAME",
+    "DEFAULT_CACHE_RETRY_COUNT",
+    # Currency
+    "DEFAULT_CURRENCY_CODE",
+    "DEFAULT_GRAPHQL_TIMEOUT_SECONDS",
+    # Lock/timeout constants
+    "DEFAULT_LOCK_TIMEOUT_SECONDS",
+    "DEFAULT_MYSQL_CONNECT_TIMEOUT_SECONDS",
+    # Network constants
+    "DEFAULT_MYSQL_PORT",
+    "DEFAULT_SKU_CACHE_TABLE",
+    "DEFAULT_SKU_CACHE_TTL_SECONDS",
+    # Cache table names
+    "DEFAULT_TOKEN_CACHE_TABLE",
+    "DEFAULT_TOKEN_EXPIRES_IN_SECONDS",
+    # Time constants
+    "DEFAULT_TOKEN_REFRESH_MARGIN_SECONDS",
     "get_default_cache_dir",
-    "get_default_token_cache_path",
     "get_default_sku_cache_path",
+    "get_default_token_cache_path",
 ]

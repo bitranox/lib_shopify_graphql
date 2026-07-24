@@ -135,7 +135,7 @@ class LocationResolver:
                 node = edge.get("node", {})
                 if node.get("isPrimary") and node.get("isActive"):
                     location_id = node.get("id")
-                    logger.info(f"Fetched primary location '{location_id}' (name='{node.get('name')}')")
+                    logger.info("Fetched primary location '%s' (name='%s')", location_id, node.get("name"))
                     return location_id
 
             # Fall back to first active location
@@ -143,7 +143,7 @@ class LocationResolver:
                 node = edges[0].get("node", {})
                 if node.get("isActive"):
                     location_id = node.get("id")
-                    logger.info(f"Using first active location '{location_id}' (name='{node.get('name')}') - no primary found")
+                    logger.info("Using first active location '%s' (name='%s') - no primary found", location_id, node.get("name"))
                     return location_id
 
             logger.warning("No active locations found")
@@ -162,4 +162,4 @@ class LocationResolver:
         self._primary_location_cache = None
 
 
-__all__ = ["LocationResolver", "PRIMARY_LOCATION_QUERY"]
+__all__ = ["PRIMARY_LOCATION_QUERY", "LocationResolver"]

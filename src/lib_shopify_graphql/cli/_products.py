@@ -12,19 +12,18 @@ from __future__ import annotations
 
 import logging
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING, Any
 
 import lib_log_rich.runtime
 import orjson
 import rich_click as click
 
-from .typed_click import argument, option
-from lib_layered_config import Config
-
 from ..adapters import CachedSKUResolver
 from ..enums import OutputFormat
 from ..exceptions import AuthenticationError, GraphQLError, ProductNotFoundError
 from ..models import (
+    UNSET,
     DeleteProductResult,
     Product,
     ProductCreate,
@@ -39,8 +38,11 @@ from ..shopify_client import (
     update_product,
 )
 from ._common import CLICK_CONTEXT_SETTINGS, EnumChoice, get_effective_config_and_profile, shopify_session
+from .typed_click import argument, option
 
 if TYPE_CHECKING:
+    from lib_layered_config import Config
+
     from ..models import ShopifyCredentials
 
 logger = logging.getLogger(__name__)
@@ -97,14 +99,14 @@ def _read_json_input(json_input: str) -> dict[str, object]:
             return orjson.loads(sys.stdin.read())
         if json_input.startswith("{"):
             return orjson.loads(json_input)
-        with open(json_input, "rb") as f:
+        with Path(json_input).open("rb") as f:
             return orjson.loads(f.read())
     except orjson.JSONDecodeError as exc:
         click.echo(f"Invalid JSON: {exc}", err=True)
         raise SystemExit(1) from exc
     except FileNotFoundError:
         click.echo(f"File not found: {json_input}", err=True)
-        raise SystemExit(1)
+        raise SystemExit(1) from None
 
 
 def _flatten_seo_fields(data: dict[str, object]) -> None:
@@ -113,9 +115,9 @@ def _flatten_seo_fields(data: dict[str, object]) -> None:
         return
 
     seo: dict[str, object] = data["seo"]  # type: ignore[assignment]
-    if "title" in seo and seo["title"]:
+    if seo.get("title"):
         data["seo_title"] = seo["title"]
-    if "description" in seo and seo["description"]:
+    if seo.get("description"):
         data["seo_description"] = seo["description"]
     del data["seo"]
 
@@ -177,6 +179,7 @@ def _parse_product_create_json(json_input: str) -> ProductCreate:
 
 
 def _build_product_create_from_options(
+    *,
     title: str | None,
     vendor: str | None,
     product_type: str | None,
@@ -239,15 +242,11 @@ _READONLY_UPDATE_FIELDS = frozenset(
 
 def _option_or_unset(value: Any) -> Any:
     """Return value if set, otherwise UNSET sentinel."""
-    from ..models import UNSET
-
     return value if value is not None else UNSET
 
 
 def _parse_tags_option(tags: str | None) -> Any:
     """Parse comma-separated tags or return UNSET."""
-    from ..models import UNSET
-
     return [t.strip() for t in tags.split(",")] if tags else UNSET
 
 
@@ -264,7 +263,7 @@ def _parse_product_update_json(json_input: str) -> ProductUpdate:
     _strip_readonly_fields(data)
 
     # Convert remaining fields to ProductUpdate (None explicitly clears field)
-    update_data = {key: value for key, value in data.items()}
+    update_data = dict(data.items())
 
     try:
         return ProductUpdate.model_validate(update_data)
@@ -274,6 +273,7 @@ def _parse_product_update_json(json_input: str) -> ProductUpdate:
 
 
 def _build_product_update_from_options(
+    *,
     title: str | None,
     vendor: str | None,
     product_type: str | None,
@@ -384,7 +384,7 @@ def register_product_commands(
         extra = {"command": "get-product", "profile": effective_profile, "product_id": product_id}
 
         with lib_log_rich.runtime.bind(job_id="cli-get-product", extra=extra):
-            logger.info(f"Fetching product '{product_id}'")
+            logger.info("Fetching product '%s'", product_id)
 
             credentials = get_credentials_or_exit(config)
 
@@ -394,11 +394,11 @@ def register_product_commands(
                     _output_product(product, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
     @cli_group.command("create-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @option("--title", type=str, default=None, help="Product title (required if no --json)")
@@ -433,6 +433,7 @@ def register_product_commands(
     @click.pass_context
     def cli_create_product(
         ctx: click.Context,
+        *,
         title: str | None,
         vendor: str | None,
         product_type: str | None,
@@ -466,7 +467,7 @@ def register_product_commands(
             # Build ProductCreate from options or JSON
             if json_input:
                 product_create = _parse_product_create_json(json_input)
-                logger.info(f"Creating product from JSON: title='{product_create.title}'")
+                logger.info("Creating product from JSON: title='%s'", product_create.title)
             else:
                 product_create = _build_product_create_from_options(
                     title=title,
@@ -479,19 +480,19 @@ def register_product_commands(
                     seo_title=seo_title,
                     seo_description=seo_description,
                 )
-                logger.info(f"Creating product: title='{product_create.title}'")
+                logger.info("Creating product: title='%s'", product_create.title)
 
             credentials = get_credentials_or_exit(config)
 
             try:
                 with shopify_session(credentials) as session:
                     product = create_product(session, product_create)
-                    logger.info(f"Product created: id='{product.id}'")
+                    logger.info("Product created: id='%s'", product.id)
                     _output_product(product, output_format)
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
     @cli_group.command("duplicate-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -514,6 +515,7 @@ def register_product_commands(
     @click.pass_context
     def cli_duplicate_product(
         ctx: click.Context,
+        *,
         product_id: str,
         new_title: str,
         no_images: bool,
@@ -541,7 +543,7 @@ def register_product_commands(
         }
 
         with lib_log_rich.runtime.bind(job_id="cli-duplicate-product", extra=extra):
-            logger.info(f"Duplicating product '{product_id}' with new title '{new_title}'")
+            logger.info("Duplicating product '%s' with new title '%s'", product_id, new_title)
 
             credentials = get_credentials_or_exit(config)
 
@@ -554,15 +556,15 @@ def register_product_commands(
                         include_images=not no_images,
                         new_status=status,
                     )
-                    logger.info(f"Product duplicated: original='{result.original_product_id}', new='{result.new_product.id}'")
+                    logger.info("Product duplicated: original='%s', new='%s'", result.original_product_id, result.new_product.id)
                     _output_product(result.new_product, output_format)
             except ProductNotFoundError:
                 click.echo(f"Source product not found: {product_id}", err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
     @cli_group.command("delete-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -578,6 +580,7 @@ def register_product_commands(
     @click.pass_context
     def cli_delete_product(
         ctx: click.Context,
+        *,
         product_id: str,
         force: bool,
         output_format: OutputFormat,
@@ -596,7 +599,7 @@ def register_product_commands(
                 click.echo("Aborted.")
                 raise SystemExit(0)
 
-            logger.info(f"Deleting product '{product_id}'")
+            logger.info("Deleting product '%s'", product_id)
 
             credentials = get_credentials_or_exit(config)
 
@@ -605,15 +608,15 @@ def register_product_commands(
             try:
                 with shopify_session(credentials) as session:
                     result = delete_product(session, product_id, sku_resolver=sku_resolver)
-                    logger.info(f"Product deleted: id='{result.deleted_product_id}'")
+                    logger.info("Product deleted: id='%s'", result.deleted_product_id)
                     _output_delete_result(result, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
     @cli_group.command("update-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -649,6 +652,7 @@ def register_product_commands(
     @click.pass_context
     def cli_update_product(
         ctx: click.Context,
+        *,
         product_id: str,
         title: str | None,
         vendor: str | None,
@@ -684,7 +688,7 @@ def register_product_commands(
             # Build ProductUpdate from options or JSON
             if json_input:
                 product_update = _parse_product_update_json(json_input)
-                logger.info(f"Updating product '{product_id}' from JSON")
+                logger.info("Updating product '%s' from JSON", product_id)
             else:
                 product_update = _build_product_update_from_options(
                     title=title,
@@ -697,26 +701,25 @@ def register_product_commands(
                     seo_title=seo_title,
                     seo_description=seo_description,
                 )
-                logger.info(f"Updating product '{product_id}'")
+                logger.info("Updating product '%s'", product_id)
 
             credentials = get_credentials_or_exit(config)
 
             try:
                 with shopify_session(credentials) as session:
                     product = update_product(session, product_id, product_update)
-                    logger.info(f"Product updated: id='{product.id}'")
+                    logger.info("Product updated: id='%s'", product.id)
                     _output_product(product, output_format)
             except ProductNotFoundError:
                 click.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
 
 __all__ = [
-    "register_product_commands",
     # Internal functions exported for tests
     "_build_product_create_from_options",
     "_flatten_seo_fields",
@@ -724,4 +727,5 @@ __all__ = [
     "_parse_product_create_json",
     "_read_json_input",
     "_strip_readonly_create_fields",
+    "register_product_commands",
 ]

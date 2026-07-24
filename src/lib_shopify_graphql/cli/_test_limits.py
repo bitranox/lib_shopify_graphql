@@ -13,16 +13,15 @@ from typing import TYPE_CHECKING, Any
 import lib_log_rich.runtime
 import rich_click as click
 
-from .typed_click import option
-
 from ..adapters.parsers import get_truncation_info
 from ..adapters.queries import PRODUCTS_LIST_QUERY, get_limits_from_config
 from ..exceptions import AuthenticationError, GraphQLError
-from ..shopify_client import ShopifySession
 from ._common import CLICK_CONTEXT_SETTINGS, get_effective_config_and_profile, shopify_session
+from .typed_click import option
 
 if TYPE_CHECKING:
     from ..models._operations import TruncationInfo
+    from ..shopify_client import ShopifySession
 
 logger = logging.getLogger(__name__)
 
@@ -336,13 +335,13 @@ def register_test_limits_command(
                     else:
                         field_summary = _display_truncation_issues(analysis.truncation_issues)
                         _display_recommendations(field_summary, analysis.truncation_issues, limits)
-                        logger.warning(f"Truncation detected in {len(analysis.truncation_issues)} product(s)")
+                        logger.warning("Truncation detected in %s product(s)", len(analysis.truncation_issues))
                         raise SystemExit(1)
 
             except (AuthenticationError, GraphQLError) as exc:
                 click.echo(f"\n✗ Error: {exc}", err=True)
                 click.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
 
 __all__ = [

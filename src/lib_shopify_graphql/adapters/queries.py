@@ -60,7 +60,7 @@ class GraphQLLimits:
             GraphQLLimits with values from config or defaults.
         """
         graphql_raw: Any = config.get("graphql", default={})
-        graphql: dict[str, Any] = cast(dict[str, Any], graphql_raw) if isinstance(graphql_raw, dict) else {}
+        graphql: dict[str, Any] = cast("dict[str, Any]", graphql_raw) if isinstance(graphql_raw, dict) else {}
 
         def get_int(key: str, default: int) -> int:
             val: Any = graphql.get(key)
@@ -72,7 +72,7 @@ class GraphQLLimits:
                 return int(val)
             return default
 
-        def get_bool(key: str, default: bool) -> bool:
+        def get_bool(key: str, default: bool) -> bool:  # noqa: FBT001 - local helper mirrors get_int's positional (key, default) shape
             val: Any = graphql.get(key)
             if val is None:
                 return default
@@ -108,7 +108,8 @@ def get_limits_from_config() -> GraphQLLimits:
         GraphQLLimits from config or defaults if config unavailable.
     """
     try:
-        from ..config import get_config
+        # Late import: re-read on each call so tests can monkeypatch config.get_config
+        from ..config import get_config  # noqa: PLC0415 - see comment above
 
         config = get_config()
         return GraphQLLimits.from_config(config)
@@ -429,11 +430,11 @@ PRODUCTS_LIST_QUERY: str = build_products_list_query()
 
 
 __all__ = [
-    "GraphQLLimits",
     "DEFAULT_LIMITS",
-    "get_limits_from_config",
+    "PRODUCTS_LIST_QUERY",
+    "PRODUCT_QUERY",
+    "GraphQLLimits",
     "build_product_query",
     "build_products_list_query",
-    "PRODUCT_QUERY",
-    "PRODUCTS_LIST_QUERY",
+    "get_limits_from_config",
 ]

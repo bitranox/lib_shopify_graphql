@@ -13,8 +13,7 @@ from __future__ import annotations
 
 import logging
 import mimetypes
-from pathlib import Path
-from typing import Any, TypedDict, cast
+from typing import TYPE_CHECKING, Any, TypedDict, cast
 
 import httpx2
 from pydantic import BaseModel, ConfigDict
@@ -51,7 +50,11 @@ from ..models import (
     StagedUploadTarget,
 )
 from ._common import _check_graphql_errors, _normalize_media_gid, _normalize_product_gid
-from ._session import ShopifySession
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from ._session import ShopifySession
 
 # =============================================================================
 # Internal TypedDicts for Raw GraphQL Response Parsing
@@ -102,7 +105,7 @@ def _parse_media_user_errors_typed(
         List of typed _ParsedMediaUserError models.
     """
     # Cast TypedDict list to dict list for parser compatibility
-    parsed = parse_media_user_errors(cast(list[dict[str, Any]], errors))
+    parsed = parse_media_user_errors(cast("list[dict[str, Any]]", errors))
     return [
         _ParsedMediaUserError(
             code=e.get("code", "UNKNOWN"),
@@ -330,14 +333,14 @@ def _handle_media_user_errors(
         return False
 
     parsed_media_errors = _parse_media_user_errors_typed(media_errors)
-    for error in parsed_media_errors:
-        failed.append(
-            ImageCreateFailure(
-                source=sources[0],  # Best effort mapping
-                error=error.message,
-                error_code=error.code if error.code != "UNKNOWN" else None,
-            )
+    failed.extend(
+        ImageCreateFailure(
+            source=sources[0],  # Best effort mapping
+            error=error.message,
+            error_code=error.code if error.code != "UNKNOWN" else None,
         )
+        for error in parsed_media_errors
+    )
     return True
 
 
@@ -351,7 +354,7 @@ def _map_created_media(
     for _source, resource_url in source_map:
         if resource_url is not None and media_index < len(created_media):
             # Cast TypedDict to dict for parser compatibility
-            parsed = parse_media_from_mutation(cast(dict[str, Any], created_media[media_index]))
+            parsed = parse_media_from_mutation(cast("dict[str, Any]", created_media[media_index]))
             succeeded.append(
                 ImageCreateSuccess(
                     image_id=parsed["image_id"],
@@ -436,7 +439,7 @@ def create_image(
 
     product_gid = _normalize_product_gid(product_id)
 
-    logger.info(f"Creating image for product '{product_gid}' from {source}")
+    logger.info("Creating image for product '%s' from %s", product_gid, source)
 
     result = _create_media_from_sources(session, product_gid, [source])
 
@@ -484,7 +487,7 @@ def create_images(
 
     product_gid = _normalize_product_gid(product_id)
 
-    logger.info(f"Creating {len(sources)} image(s) for product '{product_gid}'")
+    logger.info("Creating %s image(s) for product '%s'", len(sources), product_gid)
 
     return _create_media_from_sources(session, product_gid, sources)
 
@@ -494,7 +497,7 @@ def _check_update_media_errors(media_errors: list[_RawMediaUserError], image_gid
     if not media_errors:
         return
     # Cast TypedDict list to dict list for parser compatibility
-    parsed_errors = parse_media_user_errors(cast(list[dict[str, Any]], media_errors))
+    parsed_errors = parse_media_user_errors(cast("list[dict[str, Any]]", media_errors))
     if any(e.get("code") == "MEDIA_DOES_NOT_EXIST" for e in parsed_errors):
         raise ImageNotFoundError(image_gid)
     raise GraphQLError(f"Media update failed: {parsed_errors[0]['message']}", query=PRODUCT_UPDATE_MEDIA_MUTATION)
@@ -513,7 +516,7 @@ def update_image(
     product_gid = _normalize_product_gid(product_id)
     image_gid = _normalize_media_gid(image_id)
 
-    logger.info(f"Updating image '{image_gid}' on product '{product_gid}'")
+    logger.info("Updating image '%s' on product '%s'", image_gid, product_gid)
 
     set_fields = update.get_set_fields()
     if not set_fields:
@@ -604,7 +607,7 @@ def delete_images(
     product_gid = _normalize_product_gid(product_id)
     media_gids = [_normalize_media_gid(img_id) for img_id in image_ids]
 
-    logger.info(f"Deleting {len(media_gids)} image(s) from product '{product_gid}': {media_gids}")
+    logger.info("Deleting %s image(s) from product '%s': %s", len(media_gids), product_gid, media_gids)
 
     data = session.execute_graphql(
         PRODUCT_DELETE_MEDIA_MUTATION,
@@ -663,7 +666,7 @@ def reorder_images(
     product_gid = _normalize_product_gid(product_id)
     media_gids = [_normalize_media_gid(img_id) for img_id in image_ids]
 
-    logger.info(f"Reordering {len(media_gids)} image(s) for product '{product_gid}'")
+    logger.info("Reordering %s image(s) for product '%s'", len(media_gids), product_gid)
 
     # Build moves array (newPosition must be string for Shopify's UnsignedInt64)
     moves = [{"id": media_id, "newPosition": str(position)} for position, media_id in enumerate(media_gids)]

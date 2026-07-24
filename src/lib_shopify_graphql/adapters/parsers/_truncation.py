@@ -7,10 +7,10 @@ truncated by query limits and logs actionable warnings.
 from __future__ import annotations
 
 import logging
-from typing import TYPE_CHECKING, Any
+from typing import Any
 
-if TYPE_CHECKING:
-    from ...models._operations import TruncationInfo
+from ...models._operations import FieldTruncationInfo, TruncationFields, TruncationInfo
+from ..queries import get_limits_from_config
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +37,8 @@ _QUERY_HINTS: dict[str, dict[str, str]] = {
         "default": "iter_products uses ListProducts with page_size=250",
     },
     "list_products_paginated": {
-        "images": "ListProducts query - cost = page_size × nested_items",
-        "media": "ListProducts query - cost = page_size × nested_items",
+        "images": "ListProducts query - cost = page_size x nested_items",
+        "media": "ListProducts query - cost = page_size x nested_items",
         "default": "ListProducts query - reduce first= parameter or nested limits",
     },
     "skucache_rebuild": {
@@ -88,8 +88,9 @@ def _has_more_pages(connection_data: dict[str, Any] | None) -> bool:
     return page_info.get("hasNextPage", False)
 
 
-def _log_truncation_warning(
+def _log_truncation_warning(  # noqa: PLR0913 - internal helper: each arg is a distinct piece of warning context, not decomposable
     operation: str,
+    *,
     title: str,
     short_id: str,
     field_name: str,
@@ -114,9 +115,10 @@ def _log_truncation_warning(
     )
 
 
-def _check_connection_truncation(
+def _check_connection_truncation(  # noqa: PLR0913 - internal helper: each arg is a distinct piece of warning context, not decomposable
     product_data: dict[str, Any],
     field_key: str,
+    *,
     operation: str,
     title: str,
     short_id: str,
@@ -128,7 +130,16 @@ def _check_connection_truncation(
     field_data = product_data.get(field_key, {})
     nodes = field_data.get("nodes", [])
     if _has_more_pages(field_data):
-        _log_truncation_warning(operation, title, short_id, field_key, len(nodes), config_key, env_var, extra_warning)
+        _log_truncation_warning(
+            operation,
+            title=title,
+            short_id=short_id,
+            field_name=field_key,
+            count=len(nodes),
+            config_key=config_key,
+            env_var=env_var,
+            extra_warning=extra_warning,
+        )
 
 
 def _check_truncation(
@@ -148,52 +159,50 @@ def _check_truncation(
         operation: Name of the operation being performed for context
             (e.g., "get_product_by_id", "list_products", "iter_products").
     """
-    from ..queries import get_limits_from_config
-
     limits = get_limits_from_config()
     if not limits.product_warn_on_truncation:
         return
 
     title = product_data.get("title", "Unknown")
-    short_id = product_id.split("/")[-1] if "/" in product_id else product_id
+    short_id = product_id.rsplit("/", maxsplit=1)[-1] if "/" in product_id else product_id
 
     # Check connection fields with pageInfo
     _check_connection_truncation(
         product_data,
         "images",
-        operation,
-        title,
-        short_id,
-        "product_max_images",
-        "GRAPHQL__PRODUCT_MAX_IMAGES",
+        operation=operation,
+        title=title,
+        short_id=short_id,
+        config_key="product_max_images",
+        env_var="GRAPHQL__PRODUCT_MAX_IMAGES",
     )
     _check_connection_truncation(
         product_data,
         "media",
-        operation,
-        title,
-        short_id,
-        "product_max_media",
-        "GRAPHQL__PRODUCT_MAX_MEDIA",
+        operation=operation,
+        title=title,
+        short_id=short_id,
+        config_key="product_max_media",
+        env_var="GRAPHQL__PRODUCT_MAX_MEDIA",
     )
     _check_connection_truncation(
         product_data,
         "metafields",
-        operation,
-        title,
-        short_id,
-        "product_max_metafields",
-        "GRAPHQL__PRODUCT_MAX_METAFIELDS",
+        operation=operation,
+        title=title,
+        short_id=short_id,
+        config_key="product_max_metafields",
+        env_var="GRAPHQL__PRODUCT_MAX_METAFIELDS",
     )
     _check_connection_truncation(
         product_data,
         "variants",
-        operation,
-        title,
-        short_id,
-        "product_max_variants",
-        "GRAPHQL__PRODUCT_MAX_VARIANTS",
-        "WARNING: High values increase query cost significantly.",
+        operation=operation,
+        title=title,
+        short_id=short_id,
+        config_key="product_max_variants",
+        env_var="GRAPHQL__PRODUCT_MAX_VARIANTS",
+        extra_warning="WARNING: High values increase query cost significantly.",
     )
 
     # Check options (no pageInfo - uses count heuristic)
@@ -217,13 +226,13 @@ def _check_truncation(
         if _has_more_pages(variant_mf_data):
             _log_truncation_warning(
                 operation,
-                title,
-                short_id,
-                "variant metafields",
-                len(variant_mf_data.get("nodes", [])),
-                "product_max_variant_metafields",
-                "GRAPHQL__PRODUCT_MAX_VARIANT_METAFIELDS",
-                "WARNING: Cost = product_max_variants × product_max_variant_metafields!",
+                title=title,
+                short_id=short_id,
+                field_name="variant metafields",
+                count=len(variant_mf_data.get("nodes", [])),
+                config_key="product_max_variant_metafields",
+                env_var="GRAPHQL__PRODUCT_MAX_VARIANT_METAFIELDS",
+                extra_warning="WARNING: Cost = product_max_variants x product_max_variant_metafields!",
             )
 
 
@@ -239,9 +248,6 @@ def get_truncation_info(product_data: dict[str, Any]) -> TruncationInfo:
     Returns:
         TruncationInfo with product details and per-field truncation status.
     """
-    from ...models._operations import FieldTruncationInfo, TruncationFields, TruncationInfo
-    from ..queries import get_limits_from_config
-
     limits = get_limits_from_config()
     product_id = product_data.get("id", "unknown")
     title = product_data.get("title", "Unknown")
@@ -305,7 +311,7 @@ def get_truncation_info(product_data: dict[str, Any]) -> TruncationInfo:
             truncated=variant_metafields_truncated,
             config_key="product_max_variant_metafields",
             env_var="GRAPHQL__PRODUCT_MAX_VARIANT_METAFIELDS",
-            cost_warning="Cost = product_max_variants × product_max_variant_metafields!",
+            cost_warning="Cost = product_max_variants x product_max_variant_metafields!",
         ),
     )
 

@@ -9,22 +9,24 @@ Tests for the command-line interface covering:
 
 from __future__ import annotations
 
+import contextlib
 import json
-from pathlib import Path
-from typing import Any
-
-import pytest
-from click.testing import CliRunner
+from typing import TYPE_CHECKING, Any
 
 import lib_cli_exit_tools
-
+import pytest
 from conftest import FakeSession, MockConfig
 
 from lib_shopify_graphql import __init__conf__
 from lib_shopify_graphql import cli as cli_mod
 from lib_shopify_graphql.cli import TracebackState
-from lib_shopify_graphql.models import Product
 
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from click.testing import CliRunner
+
+    from lib_shopify_graphql.models import Product
 
 # =============================================================================
 # Traceback State Management Tests
@@ -60,20 +62,20 @@ class TestTracebackPreferences:
 
     def test_enabling_sets_traceback_true(self, isolated_traceback_config: None) -> None:
         """When we enable traceback, the config sings true."""
-        cli_mod.apply_traceback_preferences(True)
+        cli_mod.apply_traceback_preferences(enabled=True)
 
         assert lib_cli_exit_tools.config.traceback is True
 
     def test_enabling_sets_force_color_true(self, isolated_traceback_config: None) -> None:
         """When we enable traceback, color forcing activates."""
-        cli_mod.apply_traceback_preferences(True)
+        cli_mod.apply_traceback_preferences(enabled=True)
 
         assert lib_cli_exit_tools.config.traceback_force_color is True
 
     def test_disabling_sets_traceback_false(self, isolated_traceback_config: None) -> None:
         """When we disable traceback, the config whispers false."""
-        cli_mod.apply_traceback_preferences(True)
-        cli_mod.apply_traceback_preferences(False)
+        cli_mod.apply_traceback_preferences(enabled=True)
+        cli_mod.apply_traceback_preferences(enabled=False)
 
         assert lib_cli_exit_tools.config.traceback is False
 
@@ -85,7 +87,7 @@ class TestTracebackRestore:
     def test_restore_returns_to_previous_state(self, isolated_traceback_config: None) -> None:
         """When we restore traceback, the config returns to its previous state."""
         previous = cli_mod.snapshot_traceback_state()
-        cli_mod.apply_traceback_preferences(True)
+        cli_mod.apply_traceback_preferences(enabled=True)
 
         cli_mod.restore_traceback_state(previous)
 
@@ -94,7 +96,7 @@ class TestTracebackRestore:
     def test_restore_resets_force_color(self, isolated_traceback_config: None) -> None:
         """When we restore, force color also returns."""
         previous = cli_mod.snapshot_traceback_state()
-        cli_mod.apply_traceback_preferences(True)
+        cli_mod.apply_traceback_preferences(enabled=True)
 
         cli_mod.restore_traceback_state(previous)
 
@@ -494,7 +496,7 @@ class TestTracebackFlagIntegration:
         preserve_traceback_state: None,
     ) -> None:
         """When restore is disabled, the traceback choice remains."""
-        cli_mod.apply_traceback_preferences(False)
+        cli_mod.apply_traceback_preferences(enabled=False)
 
         cli_mod.main(["--traceback", "info"], restore_traceback=False)
 
@@ -630,7 +632,7 @@ class TestExtractCredentialsFromConfig:
             }
         )
 
-        with pytest.raises(ValueError, match="shopify.client_id"):
+        with pytest.raises(ValueError, match=r"shopify\.client_id"):
             cli_mod._extract_shopify_credentials_from_config(config)
 
 
@@ -2304,7 +2306,7 @@ class TestProductOutputFormatters:
         """_output_product outputs JSON when format is JSON."""
         from datetime import datetime, timezone
 
-        from lib_shopify_graphql.cli import _output_product, OutputFormat
+        from lib_shopify_graphql.cli import OutputFormat, _output_product
         from lib_shopify_graphql.models import Product
 
         now = datetime.now(tz=timezone.utc)
@@ -2334,7 +2336,7 @@ class TestProductOutputFormatters:
         """_output_product outputs human-readable format."""
         from datetime import datetime, timezone
 
-        from lib_shopify_graphql.cli import _output_product, OutputFormat
+        from lib_shopify_graphql.cli import OutputFormat, _output_product
         from lib_shopify_graphql.models import Product
 
         now = datetime.now(tz=timezone.utc)
@@ -2500,7 +2502,7 @@ class TestOutputReorderResult:
 
     def test_json_format_outputs_valid_json(self, capsys) -> None:
         """JSON format outputs valid JSON."""
-        from lib_shopify_graphql.cli import _output_reorder_result, OutputFormat
+        from lib_shopify_graphql.cli import OutputFormat, _output_reorder_result
         from lib_shopify_graphql.models import ImageReorderResult
 
         result = ImageReorderResult(product_id="gid://shopify/Product/123", job_id="job-456")
@@ -2514,7 +2516,7 @@ class TestOutputReorderResult:
 
     def test_human_format_shows_product_id(self, capsys) -> None:
         """Human format shows product ID."""
-        from lib_shopify_graphql.cli import _output_reorder_result, OutputFormat
+        from lib_shopify_graphql.cli import OutputFormat, _output_reorder_result
         from lib_shopify_graphql.models import ImageReorderResult
 
         result = ImageReorderResult(product_id="gid://shopify/Product/123", job_id=None)
@@ -2527,7 +2529,7 @@ class TestOutputReorderResult:
 
     def test_human_format_shows_job_id_when_present(self, capsys) -> None:
         """Human format shows job ID when async operation."""
-        from lib_shopify_graphql.cli import _output_reorder_result, OutputFormat
+        from lib_shopify_graphql.cli import OutputFormat, _output_reorder_result
         from lib_shopify_graphql.models import ImageReorderResult
 
         result = ImageReorderResult(product_id="gid://shopify/Product/123", job_id="job-456")
@@ -3246,14 +3248,12 @@ class TestCreateMySQLCacheAdapter:
 
         mock_config = MockConfig({"shopify": {"mysql": {"connection": "mysql://shared:pass@shared/db"}}})
 
-        try:
+        with contextlib.suppress(ValueError):
             cli_mod._create_mysql_cache_adapter(
                 mock_config,
                 cache_connection="mysql://cache:pass@cache/db",
                 table_name="test",
             )
-        except ValueError:
-            pass
 
         assert captured["connection"] == "mysql://cache:pass@cache/db"
 
@@ -3273,14 +3273,12 @@ class TestCreateMySQLCacheAdapter:
 
         mock_config = MockConfig({"shopify": {"mysql": {"connection": "mysql://shared:pass@shared/db"}}})
 
-        try:
+        with contextlib.suppress(ValueError):
             cli_mod._create_mysql_cache_adapter(
                 mock_config,
                 cache_connection="",
                 table_name="test",
             )
-        except ValueError:
-            pass
 
         assert captured["connection"] == "mysql://shared:pass@shared/db"
 
@@ -3332,14 +3330,12 @@ class TestCreateMySQLCacheAdapter:
             }
         )
 
-        try:
+        with contextlib.suppress(ValueError):
             cli_mod._create_mysql_cache_adapter(
                 mock_config,
                 cache_connection="",
                 table_name="sku_cache",
             )
-        except ValueError:
-            pass
 
         assert captured["host"] == "db.example.com"
         assert captured["port"] == 3307
@@ -3640,6 +3636,7 @@ class TestContextHelpers:
     def test_get_config_from_context_returns_config_when_present(self) -> None:
         """Returns config from context when available."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import CliContext, get_config_from_context
 
         ctx = click_pkg.Context(click_pkg.Command("test"))
@@ -3653,6 +3650,7 @@ class TestContextHelpers:
     def test_get_config_from_context_loads_fresh_when_missing(self) -> None:
         """Loads fresh config when context has no config."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import get_config_from_context
 
         ctx = click_pkg.Context(click_pkg.Command("test"))
@@ -3665,6 +3663,7 @@ class TestContextHelpers:
     def test_get_effective_profile_returns_override_when_provided(self) -> None:
         """Returns override profile when explicitly provided."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import CliContext, get_effective_profile
 
         ctx = click_pkg.Context(click_pkg.Command("test"))
@@ -3677,6 +3676,7 @@ class TestContextHelpers:
     def test_get_effective_profile_returns_context_when_no_override(self) -> None:
         """Returns context profile when no override provided."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import CliContext, get_effective_profile
 
         ctx = click_pkg.Context(click_pkg.Command("test"))
@@ -3689,6 +3689,7 @@ class TestContextHelpers:
     def test_get_effective_profile_returns_none_when_no_cli_context(self) -> None:
         """Returns None when context.obj is not CliContext."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import get_effective_profile
 
         ctx = click_pkg.Context(click_pkg.Command("test"))
@@ -3701,6 +3702,7 @@ class TestContextHelpers:
     def test_store_cli_context_creates_new_context_object(self) -> None:
         """Creates new CliContext when obj is not CliContext."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import CliContext, store_cli_context
 
         ctx = click_pkg.Context(click_pkg.Command("test"))
@@ -3716,6 +3718,7 @@ class TestContextHelpers:
     def test_store_cli_context_updates_existing_context(self) -> None:
         """Updates existing CliContext when already present."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import CliContext, store_cli_context
 
         ctx = click_pkg.Context(click_pkg.Command("test"))
@@ -3764,6 +3767,7 @@ class TestEnumChoiceParameter:
     def test_convert_fails_on_invalid_value(self) -> None:
         """Raises BadParameter for invalid enum value."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import EnumChoice
         from lib_shopify_graphql.enums import OutputFormat
 
@@ -3775,6 +3779,7 @@ class TestEnumChoiceParameter:
     def test_convert_fails_on_non_string(self) -> None:
         """Raises BadParameter for non-string input."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import EnumChoice
         from lib_shopify_graphql.enums import OutputFormat
 
@@ -3786,6 +3791,7 @@ class TestEnumChoiceParameter:
     def test_get_metavar_shows_choices(self) -> None:
         """Returns metavar showing available choices."""
         import click as click_pkg
+
         from lib_shopify_graphql.cli._common import EnumChoice
         from lib_shopify_graphql.enums import OutputFormat
 

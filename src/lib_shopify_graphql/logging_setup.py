@@ -5,8 +5,8 @@ eliminating duplication between module entry (__main__.py) and console script
 (cli.py) while ensuring initialization happens exactly once.
 
 Contents:
-    * :func:`init_logging` – idempotent logging initialization with layered config.
-    * :func:`_build_runtime_config` – constructs RuntimeConfig from layered sources.
+    * :func:`init_logging` - idempotent logging initialization with layered config.
+    * :func:`_build_runtime_config` - constructs RuntimeConfig from layered sources.
 
 System Role:
     Lives in the adapters/platform layer. All entry points (module execution,
@@ -16,13 +16,15 @@ System Role:
 
 from __future__ import annotations
 
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import lib_log_rich.config
 import lib_log_rich.runtime
-from lib_layered_config import Config
 
 from . import __init__conf__
+
+if TYPE_CHECKING:
+    from lib_layered_config import Config
 
 
 def _build_runtime_config(config: Config) -> lib_log_rich.runtime.RuntimeConfig:

@@ -8,13 +8,10 @@ This module provides CLI commands for displaying and deploying configuration:
 from __future__ import annotations
 
 import logging
-from pathlib import Path
-from typing import NoReturn
+from typing import TYPE_CHECKING, NoReturn
 
 import lib_log_rich.runtime
 import rich_click as click
-
-from .typed_click import option
 
 from ..config_deploy import deploy_configuration
 from ..config_show import display_config
@@ -25,6 +22,10 @@ from ._common import (
     get_effective_config_and_profile,
     get_effective_profile,
 )
+from .typed_click import option
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -61,7 +62,7 @@ def _handle_deploy_error(exc: Exception) -> NoReturn:
     raise SystemExit(1)
 
 
-def _execute_deployment(targets: tuple[DeployTarget, ...], force: bool, effective_profile: str | None) -> None:
+def _execute_deployment(targets: tuple[DeployTarget, ...], *, force: bool, effective_profile: str | None) -> None:
     """Execute deployment with error handling (reduces nesting in cli_config_deploy)."""
     try:
         deployed_paths = deploy_configuration(targets=targets, force=force, profile=effective_profile)
@@ -124,7 +125,7 @@ def register_config_commands(cli_group: click.Group) -> None:
         extra = {"command": "config", "format": output_format.value, "profile": effective_profile}
         with lib_log_rich.runtime.bind(job_id="cli-config", extra=extra):
             if output_format != OutputFormat.JSON:
-                logger.info(f"Displaying configuration: format='{output_format.value}', section='{section}', profile='{effective_profile}'")
+                logger.info("Displaying configuration: format='%s', section='%s', profile='%s'", output_format.value, section, effective_profile)
             display_config(config, format=output_format, section=section)
 
     @cli_group.command("config-deploy", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -149,7 +150,7 @@ def register_config_commands(cli_group: click.Group) -> None:
         help="Override profile from root command (e.g., 'production', 'test')",
     )
     @click.pass_context
-    def cli_config_deploy(ctx: click.Context, targets: tuple[DeployTarget, ...], force: bool, profile: str | None) -> None:
+    def cli_config_deploy(ctx: click.Context, *, targets: tuple[DeployTarget, ...], force: bool, profile: str | None) -> None:
         r"""Deploy default configuration to system or user directories.
 
         Creates configuration files in platform-specific locations:
@@ -185,8 +186,8 @@ def register_config_commands(cli_group: click.Group) -> None:
         target_values = tuple(t.value for t in targets)
         extra = {"command": "config-deploy", "targets": target_values, "force": force, "profile": effective_profile}
         with lib_log_rich.runtime.bind(job_id="cli-config-deploy", extra=extra):
-            logger.info(f"Deploying configuration: targets={target_values}, force={force}, profile='{effective_profile}'")
-            _execute_deployment(targets, force, effective_profile)
+            logger.info("Deploying configuration: targets=%s, force=%s, profile='%s'", target_values, force, effective_profile)
+            _execute_deployment(targets, force=force, effective_profile=effective_profile)
 
 
 __all__ = [

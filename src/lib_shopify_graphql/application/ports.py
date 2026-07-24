@@ -15,10 +15,11 @@ Protocols:
 
 from __future__ import annotations
 
-from datetime import datetime
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
     from ..models import Product
 
 
@@ -316,7 +317,7 @@ __all__ = [
     "CachePort",
     "GraphQLClientPort",
     "LocationResolverPort",
-    "SessionManagerPort",
     "SKUResolverPort",
+    "SessionManagerPort",
     "TokenProviderPort",
 ]

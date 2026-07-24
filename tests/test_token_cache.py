@@ -15,14 +15,15 @@ from __future__ import annotations
 
 import json
 from datetime import datetime, timedelta, timezone
+from typing import TYPE_CHECKING
 
 import pytest
 
 from lib_shopify_graphql.adapters.constants import DEFAULT_TOKEN_REFRESH_MARGIN_SECONDS
 from lib_shopify_graphql.adapters.token_cache import CachedTokenProvider
 
-from conftest import FakeTokenProvider, InMemoryCache
-
+if TYPE_CHECKING:
+    from conftest import FakeTokenProvider, InMemoryCache
 
 # =============================================================================
 # Cache Hit Behavior

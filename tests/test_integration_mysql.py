@@ -29,9 +29,9 @@ from typing import TYPE_CHECKING, Any
 import pytest
 
 if TYPE_CHECKING:
-    from lib_shopify_graphql import Product, ShopifySession
-
     from conftest import MySQLTestState
+
+    from lib_shopify_graphql import Product, ShopifySession
 
 
 pytestmark = [
@@ -43,7 +43,7 @@ pytestmark = [
 class TestMySQLCacheAdapter:
     """Tests for MySQLCacheAdapter implementation."""
 
-    def test_auto_creates_database(self, mysql_test_config: "MySQLTestState") -> None:
+    def test_auto_creates_database(self, mysql_test_config: MySQLTestState) -> None:
         """MySQLCacheAdapter auto-creates database when configured."""
         from lib_shopify_graphql.adapters import MySQLCacheAdapter
 
@@ -64,7 +64,7 @@ class TestMySQLCacheAdapter:
         cache.set("test_key", "test_value")
         assert cache.get("test_key") == "test_value"
 
-    def test_get_set_delete(self, mysql_test_config: "MySQLTestState") -> None:
+    def test_get_set_delete(self, mysql_test_config: MySQLTestState) -> None:
         """Basic get/set/delete operations work correctly."""
         from lib_shopify_graphql.adapters import MySQLCacheAdapter
 
@@ -96,7 +96,7 @@ class TestMySQLCacheAdapter:
         # Get non-existent key
         assert cache.get("nonexistent") is None
 
-    def test_ttl_expiration(self, mysql_test_config: "MySQLTestState") -> None:
+    def test_ttl_expiration(self, mysql_test_config: MySQLTestState) -> None:
         """TTL causes entries to expire."""
         from lib_shopify_graphql.adapters import MySQLCacheAdapter
 
@@ -121,7 +121,7 @@ class TestMySQLCacheAdapter:
         time.sleep(2)
         assert cache.get("short_lived") is None
 
-    def test_keys_with_prefix(self, mysql_test_config: "MySQLTestState") -> None:
+    def test_keys_with_prefix(self, mysql_test_config: MySQLTestState) -> None:
         """keys() returns keys with optional prefix filter."""
         from lib_shopify_graphql.adapters import MySQLCacheAdapter
 
@@ -148,7 +148,7 @@ class TestMySQLCacheAdapter:
         assert len(cache.keys(prefix="sku:")) == 2
         assert len(cache.keys(prefix="token:")) == 1
 
-    def test_clear(self, mysql_test_config: "MySQLTestState") -> None:
+    def test_clear(self, mysql_test_config: MySQLTestState) -> None:
         """clear() removes all entries."""
         from lib_shopify_graphql.adapters import MySQLCacheAdapter
 
@@ -172,7 +172,7 @@ class TestMySQLCacheAdapter:
         cache.clear()
         assert len(cache.keys()) == 0
 
-    def test_from_url_factory(self, mysql_test_config: "MySQLTestState") -> None:
+    def test_from_url_factory(self, mysql_test_config: MySQLTestState) -> None:
         """from_url() creates adapter from connection string."""
         from lib_shopify_graphql.adapters import MySQLCacheAdapter
 
@@ -201,8 +201,8 @@ class TestSKUCacheRebuildMySQL:
 
     def test_skucache_rebuild_returns_variant_count(
         self,
-        integration_session: "ShopifySession",
-        test_product: "Product",
+        integration_session: ShopifySession,
+        test_product: Product,
         mysql_sku_cache: Any,
     ) -> None:
         """skucache_rebuild returns count of cached variants."""
@@ -223,8 +223,8 @@ class TestSKUCacheRebuildMySQL:
 
     def test_skucache_rebuild_populates_sku_mappings(
         self,
-        integration_session: "ShopifySession",
-        test_product: "Product",
+        integration_session: ShopifySession,
+        test_product: Product,
         mysql_sku_cache: Any,
     ) -> None:
         """skucache_rebuild populates SKU-to-GID mappings in MySQL cache."""
@@ -250,8 +250,8 @@ class TestSKUCacheRebuildMySQL:
 
     def test_skucache_clear_removes_all_entries(
         self,
-        integration_session: "ShopifySession",
-        test_product: "Product",
+        integration_session: ShopifySession,
+        test_product: Product,
         mysql_sku_cache: Any,
     ) -> None:
         """skucache_clear removes all cached SKU mappings."""
@@ -287,8 +287,8 @@ class TestSKUCacheCheckMySQL:
 
     def test_skucache_check_consistent_after_rebuild(
         self,
-        integration_session: "ShopifySession",
-        test_product: "Product",
+        integration_session: ShopifySession,
+        test_product: Product,
         mysql_sku_cache: Any,
     ) -> None:
         """skucache_check reports consistent after rebuild."""
@@ -364,8 +364,8 @@ class TestCacheClearAllMySQL:
 
     def test_cache_clear_all_clears_both_caches(
         self,
-        integration_session: "ShopifySession",
-        test_product: "Product",
+        integration_session: ShopifySession,
+        test_product: Product,
         integration_credentials: Any,
         mysql_sku_cache: Any,
         mysql_token_cache: Any,

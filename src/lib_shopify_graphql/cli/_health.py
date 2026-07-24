@@ -8,22 +8,23 @@ from __future__ import annotations
 
 import logging
 from dataclasses import dataclass
-from datetime import datetime
 from typing import TYPE_CHECKING
 from urllib.error import URLError
 
 import lib_log_rich.runtime
 import rich_click as click
 
-from .typed_click import option
-from lib_layered_config import Config
-
 from ..exceptions import AuthenticationError, GraphQLError
 from ..models import ShopifyCredentials
 from ..shopify_client import login, logout
 from ._common import CLICK_CONTEXT_SETTINGS, get_effective_config_and_profile
+from .typed_click import option
 
 if TYPE_CHECKING:
+    from datetime import datetime
+
+    from lib_layered_config import Config
+
     pass
 
 logger = logging.getLogger(__name__)
@@ -159,7 +160,7 @@ def get_credentials_or_exit(config: Config) -> ShopifyCredentials:
     except ValueError as exc:
         click.echo(f"Configuration error: {exc}", err=True)
         click.echo(get_fix_suggestion(exc, None), err=True)
-        raise SystemExit(1)
+        raise SystemExit(1) from exc
 
 
 # =============================================================================
@@ -199,7 +200,7 @@ def execute_health_check(credentials: ShopifyCredentials) -> HealthCheckResult:
         if session is not None and session.is_active:
             try:
                 logout(session)
-            except Exception as logout_exc:  # noqa: BLE001
+            except Exception as logout_exc:
                 # Cleanup errors are secondary; log but don't mask original error
                 logger.debug("Cleanup logout failed: %s", logout_exc)
 
@@ -296,7 +297,7 @@ def register_health_command(cli_group: click.Group) -> None:
         extra = {"command": "health", "profile": effective_profile}
 
         with lib_log_rich.runtime.bind(job_id="cli-health", extra=extra):
-            logger.info(f"Starting Shopify health check for profile '{effective_profile}'")
+            logger.info("Starting Shopify health check for profile '%s'", effective_profile)
 
             # Extract and validate credentials
             credentials: ShopifyCredentials | None = None
@@ -310,25 +311,25 @@ def register_health_command(cli_group: click.Group) -> None:
                     fix_suggestion=get_fix_suggestion(exc, None),
                 )
                 format_health_output(result)
-                raise SystemExit(1)
+                raise SystemExit(1) from exc
 
             # Execute health check
             result = execute_health_check(credentials)
             format_health_output(result)
 
             if result.success:
-                logger.info(f"Health check passed for shop '{result.shop_name}'")
+                logger.info("Health check passed for shop '%s'", result.shop_name)
             else:
-                logger.warning(f"Health check failed: {result.error_type} - {result.error_message}")
+                logger.warning("Health check failed: %s - %s", result.error_type, result.error_message)
                 raise SystemExit(1)
 
 
 __all__ = [
     "HealthCheckResult",
-    "extract_shopify_credentials_from_config",
-    "get_fix_suggestion",
-    "get_credentials_or_exit",
     "execute_health_check",
+    "extract_shopify_credentials_from_config",
     "format_health_output",
+    "get_credentials_or_exit",
+    "get_fix_suggestion",
     "register_health_command",
 ]

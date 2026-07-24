@@ -12,11 +12,11 @@ import runpy
 import subprocess
 import sys
 
+import lib_cli_exit_tools
 import pytest
 
-import lib_cli_exit_tools
-
-from lib_shopify_graphql import __init__conf__, cli as cli_mod
+from lib_shopify_graphql import __init__conf__
+from lib_shopify_graphql import cli as cli_mod
 
 
 def _run_module_subprocess(args: list[str], timeout: int = 30) -> subprocess.CompletedProcess[str]:
@@ -34,7 +34,7 @@ def _run_module_subprocess(args: list[str], timeout: int = 30) -> subprocess.Com
     """
     env = os.environ.copy()
     env["PYTHONIOENCODING"] = "utf-8"
-    return subprocess.run(
+    return subprocess.run(  # noqa: S603 - args are test-controlled fixed argv (module invocations), not external input
         args,
         capture_output=True,
         text=True,
@@ -42,6 +42,7 @@ def _run_module_subprocess(args: list[str], timeout: int = 30) -> subprocess.Com
         env=env,
         encoding="utf-8",
         errors="replace",
+        check=False,
     )
 
 
@@ -139,7 +140,7 @@ class TestCliImport:
 
     def test_cli_has_expected_commands(self) -> None:
         """When CLI is imported, expected commands are available."""
-        command_names = [cmd for cmd in cli_mod.cli.commands]
+        command_names = list(cli_mod.cli.commands)
 
         assert "info" in command_names
         assert "config" in command_names

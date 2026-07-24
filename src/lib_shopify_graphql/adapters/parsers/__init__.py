@@ -12,6 +12,8 @@ Submodules:
     _mutations: Mutation response parsing
 """
 
+# Re-export VariantMutationResult (used by tests via this module)
+from ...models._operations import VariantMutationResult
 from ._errors import format_graphql_error, format_graphql_errors, parse_graphql_errors
 from ._input_builders import build_product_create_input, build_product_input, build_variant_input
 from ._mutations import (
@@ -22,9 +24,6 @@ from ._mutations import (
     parse_user_errors,
     parse_variant_from_mutation,
 )
-
-# Re-export VariantMutationResult (used by tests via this module)
-from ...models._operations import VariantMutationResult
 from ._products import (
     parse_datetime,
     parse_image,
@@ -44,16 +43,22 @@ from ._products import (
 from ._truncation import _check_truncation, _has_more_pages, get_truncation_info
 
 __all__ = [
-    # Error parsing
-    "format_graphql_error",
-    "format_graphql_errors",
-    "parse_graphql_errors",
+    # Re-exported models
+    "VariantMutationResult",
+    # Truncation
+    "_check_truncation",
+    "_has_more_pages",
     # Input builders
     "build_product_create_input",
     "build_product_input",
     "build_variant_input",
+    # Error parsing
+    "format_graphql_error",
+    "format_graphql_errors",
+    "get_truncation_info",
     # Response parsers
     "parse_datetime",
+    "parse_graphql_errors",
     "parse_image",
     "parse_inventory_level",
     "parse_inventory_policy",
@@ -73,10 +78,4 @@ __all__ = [
     "parse_user_errors",
     "parse_variant",
     "parse_variant_from_mutation",
-    # Truncation
-    "_check_truncation",
-    "_has_more_pages",
-    "get_truncation_info",
-    # Re-exported models
-    "VariantMutationResult",
 ]

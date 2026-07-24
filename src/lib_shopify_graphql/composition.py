@@ -31,9 +31,8 @@ Usage:
 from __future__ import annotations
 
 import logging
-from collections.abc import Callable
 from pathlib import Path
-from typing import Any, TypedDict
+from typing import TYPE_CHECKING, Any, TypedDict
 
 from .adapters import (
     PYMYSQL_AVAILABLE,
@@ -53,14 +52,18 @@ from .adapters.constants import (
     DEFAULT_SKU_CACHE_TTL_SECONDS,
     DEFAULT_TOKEN_REFRESH_MARGIN_SECONDS,
 )
-from .application.ports import (
-    CachePort,
-    GraphQLClientPort,
-    LocationResolverPort,
-    SessionManagerPort,
-    SKUResolverPort,
-    TokenProviderPort,
-)
+
+if TYPE_CHECKING:
+    from collections.abc import Callable
+
+    from .application.ports import (
+        CachePort,
+        GraphQLClientPort,
+        LocationResolverPort,
+        SessionManagerPort,
+        SKUResolverPort,
+        TokenProviderPort,
+    )
 
 logger = logging.getLogger(__name__)
 
@@ -119,7 +122,7 @@ def get_default_adapters() -> AdapterBundle:
     Returns:
         The default AdapterBundle with Shopify SDK implementations.
     """
-    global _default_adapters
+    global _default_adapters  # noqa: PLW0603 - module-level singleton cache, composition-root pattern
     if _default_adapters is None:
         _default_adapters = create_adapters()
     return _default_adapters
@@ -318,11 +321,11 @@ def _create_cache_from_config(
             )
 
         logger.warning(
-            f"MySQL backend requested for {cache_type} but not configured. Set shopify.mysql.connection or shopify.mysql.user + shopify.mysql.database"
+            "MySQL backend requested for %s but not configured. Set shopify.mysql.connection or shopify.mysql.user + shopify.mysql.database", cache_type
         )
         return None
 
-    logger.warning(f"Unknown {cache_type} backend '{backend}', expected 'json' or 'mysql'")
+    logger.warning("Unknown %s backend '%s', expected 'json' or 'mysql'", cache_type, backend)
     return None
 
 
@@ -366,7 +369,7 @@ def get_default_sku_resolver(
         if resolver:
             gid = resolver.resolve("ABC-123", "mystore.myshopify.com")
     """
-    global _default_sku_resolver, _sku_resolver_checked
+    global _default_sku_resolver, _sku_resolver_checked  # noqa: PLW0603 - module-level singleton cache, composition-root pattern
 
     if _sku_resolver_checked:
         return _default_sku_resolver
@@ -374,7 +377,8 @@ def get_default_sku_resolver(
     _sku_resolver_checked = True
 
     try:
-        from .config import get_config
+        # Late import: re-read on each call so tests can monkeypatch config.get_config
+        from .config import get_config  # noqa: PLC0415 - see comment above
 
         config = get_config()
         shopify_config = config.get("shopify", {})
@@ -400,7 +404,7 @@ def get_default_sku_resolver(
         return _default_sku_resolver
 
     except Exception as exc:
-        logger.warning(f"Failed to create default SKU resolver: {exc}")
+        logger.warning("Failed to create default SKU resolver: %s", exc)
         return None
 
 
@@ -417,7 +421,7 @@ def get_default_token_provider() -> TokenProviderPort:
         provider = get_default_token_provider()
         token, expires = provider.obtain_token(shop_url, client_id, client_secret)
     """
-    global _default_token_provider, _token_provider_checked
+    global _default_token_provider, _token_provider_checked  # noqa: PLW0603 - module-level singleton cache, composition-root pattern
 
     if _token_provider_checked and _default_token_provider is not None:
         return _default_token_provider
@@ -426,7 +430,8 @@ def get_default_token_provider() -> TokenProviderPort:
     base_provider = ShopifyTokenProvider()
 
     try:
-        from .config import get_config
+        # Late import: re-read on each call so tests can monkeypatch config.get_config
+        from .config import get_config  # noqa: PLC0415 - see comment above
 
         config = get_config()
         shopify_config = config.get("shopify", {})
@@ -449,7 +454,7 @@ def get_default_token_provider() -> TokenProviderPort:
         return _default_token_provider
 
     except Exception as exc:
-        logger.warning(f"Failed to create cached token provider: {exc}")
+        logger.warning("Failed to create cached token provider: %s", exc)
         _default_token_provider = base_provider
         return base_provider
 
@@ -460,8 +465,8 @@ def reset_default_resolvers() -> None:
     Call this to force re-reading configuration on next access.
     Useful after configuration changes or in tests.
     """
-    global _default_sku_resolver, _sku_resolver_checked
-    global _default_token_provider, _token_provider_checked
+    global _default_sku_resolver, _sku_resolver_checked  # noqa: PLW0603 - module-level singleton cache, composition-root pattern
+    global _default_token_provider, _token_provider_checked  # noqa: PLW0603 - module-level singleton cache, composition-root pattern
     _default_sku_resolver = None
     _sku_resolver_checked = False
     _default_token_provider = None

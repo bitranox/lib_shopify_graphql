@@ -56,7 +56,7 @@ class ShopifyTokenProvider:
         """
         request = self._build_token_request(shop_url, client_id, client_secret)
         try:
-            with urllib.request.urlopen(request, timeout=30) as response:
+            with urllib.request.urlopen(request, timeout=30) as response:  # noqa: S310 - URL is built from a validated .myshopify.com shop_url (see bandit B310 skip)
                 result = orjson.loads(response.read())
             return self._parse_token_response(result, shop_url)
         except urllib.error.HTTPError as exc:
@@ -98,7 +98,7 @@ class ShopifyTokenProvider:
         expires_in = result.get("expires_in", DEFAULT_TOKEN_EXPIRES_IN_SECONDS)
         expiration = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
         scopes = result.get("scope", "")
-        logger.info(f"Obtained access token for shop '{shop_url}' (expires_in={expires_in}s, scopes='{scopes}')")
+        logger.info("Obtained access token for shop '%s' (expires_in=%ss, scopes='%s')", shop_url, expires_in, scopes)
         return access_token, expiration
 
     def _handle_token_error(
@@ -208,7 +208,7 @@ class ShopifyGraphQLClient:
             payload["variables"] = variables
 
         data = orjson.dumps(payload)
-        request = urllib.request.Request(
+        request = urllib.request.Request(  # noqa: S310 - URL is built from a validated .myshopify.com shop_url (see bandit B310 skip)
             endpoint,
             data=data,
             headers={
@@ -218,7 +218,7 @@ class ShopifyGraphQLClient:
             method="POST",
         )
 
-        with urllib.request.urlopen(request, timeout=self._get_effective_timeout()) as response:
+        with urllib.request.urlopen(request, timeout=self._get_effective_timeout()) as response:  # noqa: S310 - URL is built from a validated .myshopify.com shop_url (see bandit B310 skip)
             return orjson.loads(response.read())
 
     def _execute_with_timeout(
@@ -234,7 +234,7 @@ class ShopifyGraphQLClient:
             try:
                 return future.result(timeout=timeout_value)
             except FuturesTimeoutError as exc:
-                logger.warning(f"GraphQL query timed out after {timeout_value}s, query_preview='{query[:100]}...'")
+                logger.warning("GraphQL query timed out after %ss, query_preview='%s...'", timeout_value, query[:100])
                 raise GraphQLTimeoutError(
                     f"GraphQL query timed out after {timeout_value} seconds",
                     timeout=timeout_value,

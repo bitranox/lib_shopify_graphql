@@ -19,6 +19,7 @@ if TYPE_CHECKING:
     )
 
 from ..adapters.parsers import format_graphql_errors, parse_graphql_errors
+from ..composition import get_default_sku_resolver, get_default_token_provider
 from ..exceptions import AuthenticationError, SessionNotActiveError
 from ..models import ShopifyCredentials, ShopifySessionInfo
 from ._common import _get_default_graphql_client, _get_default_session_manager, _get_default_token_provider
@@ -136,7 +137,7 @@ class ShopifySession:
         object.__setattr__(self, "_raw_session", new_session)
         object.__setattr__(self, "_access_token", new_token)
         object.__setattr__(self, "_token_expiration", new_expiration)
-        logger.info(f"Refreshed access token for shop '{self._credentials.shop_url}'")
+        logger.info("Refreshed access token for shop '%s'", self._credentials.shop_url)
 
     def execute_graphql(self, query: str, variables: dict[str, Any] | None = None) -> dict[str, Any]:
         """Execute a GraphQL query using this session.
@@ -233,8 +234,6 @@ def login(
     # Use provided adapters or defaults from composition root
     # Token provider uses get_default_token_provider() which auto-enables caching if configured
     if token_provider is None:
-        from ..composition import get_default_token_provider
-
         tp: TokenProviderPort = get_default_token_provider()
     else:
         tp = token_provider
@@ -254,8 +253,6 @@ def login(
         gc.configure(credentials.shop_url, credentials.api_version, access_token)
 
         # SKU resolver uses get_default_sku_resolver() which auto-enables caching if configured
-        from ..composition import get_default_sku_resolver
-
         sku_resolver = get_default_sku_resolver(gc)
 
         session = ShopifySession(
@@ -271,12 +268,12 @@ def login(
         )
 
         shop_name = _verify_authentication(session, credentials)
-        logger.info(f"Successfully authenticated with Shopify: shop='{shop_name}', url='{credentials.shop_url}'")
+        logger.info("Successfully authenticated with Shopify: shop='%s', url='%s'", shop_name, credentials.shop_url)
         return session
     except AuthenticationError:
         raise
     except Exception as exc:
-        logger.error(f"Failed to authenticate with Shopify for shop '{credentials.shop_url}': {exc}")
+        logger.error("Failed to authenticate with Shopify for shop '%s': %s", credentials.shop_url, exc)
         raise AuthenticationError(f"Failed to authenticate with Shopify: {exc}", shop_url=credentials.shop_url) from exc
 
 
@@ -298,12 +295,12 @@ def _obtain_access_token(
     """
     # Direct access token (Custom Apps)
     if credentials.access_token:
-        logger.info(f"Authenticating with Shopify using direct access token: shop='{credentials.shop_url}', api_version='{credentials.api_version}'")
+        logger.info("Authenticating with Shopify using direct access token: shop='%s', api_version='%s'", credentials.shop_url, credentials.api_version)
         return credentials.access_token, None
 
     # Client Credentials Grant (Partner Apps)
     if credentials.client_id and credentials.client_secret:
-        logger.info(f"Authenticating with Shopify via client credentials grant: shop='{credentials.shop_url}', api_version='{credentials.api_version}'")
+        logger.info("Authenticating with Shopify via client credentials grant: shop='%s', api_version='%s'", credentials.shop_url, credentials.api_version)
         return token_provider.obtain_token(
             credentials.shop_url,
             credentials.client_id,
@@ -331,13 +328,13 @@ def logout(session: ShopifySession) -> None:
     """
     if not session.is_active:
         raise SessionNotActiveError("Cannot logout: session is already inactive")
-    logger.info(f"Logging out from Shopify: shop='{session.get_credentials().shop_url}'")
+    logger.info("Logging out from Shopify: shop='%s'", session.get_credentials().shop_url)
     try:
         session.clear_session()
         session.mark_inactive()
         logger.info("Successfully logged out from Shopify")
     except Exception as exc:
-        logger.error(f"Error during logout: {exc}")
+        logger.error("Error during logout: %s", exc)
         session.mark_inactive()
         raise
 

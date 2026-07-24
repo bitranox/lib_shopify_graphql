@@ -21,6 +21,7 @@ if TYPE_CHECKING:
     from ._session import ShopifySession
 
 from ..adapters.parsers import format_graphql_errors, parse_graphql_errors
+from ..composition import get_default_adapters
 from ..exceptions import GraphQLError, VariantNotFoundError
 
 logger = logging.getLogger(__name__)
@@ -52,14 +53,11 @@ def _ensure_adapters_cache() -> _AdaptersCache:
     Returns:
         The initialized adapters cache.
     """
-    global _default_adapters_cache
+    global _default_adapters_cache  # noqa: PLW0603 - double-checked-locking singleton cache
     if _default_adapters_cache is None:
         with _default_adapters_lock:
             # Double-check after acquiring lock (another thread may have initialized)
             if _default_adapters_cache is None:
-                # Import here to avoid circular imports
-                from ..composition import get_default_adapters
-
                 bundle = get_default_adapters()
                 _default_adapters_cache = {
                     "token_provider": bundle["token_provider"],
@@ -150,7 +148,7 @@ def _normalize_media_gid(media_id: str) -> str:
     """
     if media_id.startswith("gid://shopify/ProductImage/"):
         # Convert ProductImage GID to MediaImage GID
-        numeric_id = media_id.split("/")[-1]
+        numeric_id = media_id.rsplit("/", maxsplit=1)[-1]
         return f"gid://shopify/MediaImage/{numeric_id}"
     if media_id.startswith("gid://"):
         return media_id

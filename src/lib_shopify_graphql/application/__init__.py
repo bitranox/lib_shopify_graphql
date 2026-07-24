@@ -23,7 +23,7 @@ __all__ = [
     "CachePort",
     "GraphQLClientPort",
     "LocationResolverPort",
-    "SessionManagerPort",
     "SKUResolverPort",
+    "SessionManagerPort",
     "TokenProviderPort",
 ]

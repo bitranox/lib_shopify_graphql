@@ -15,6 +15,7 @@ Coverage:
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from typing import TYPE_CHECKING
 
 import pytest
 
@@ -24,10 +25,10 @@ from lib_shopify_graphql.adapters.sku_resolver import (
     SKUCacheEntry,
 )
 from lib_shopify_graphql.exceptions import AmbiguousSKUError
-from lib_shopify_graphql.models import Product, ProductVariant, Money, ProductStatus
+from lib_shopify_graphql.models import Money, Product, ProductStatus, ProductVariant
 
-from conftest import FakeGraphQLClient, InMemoryCache
-
+if TYPE_CHECKING:
+    from conftest import FakeGraphQLClient, InMemoryCache
 
 # Shared test timestamp for Product models
 _TEST_TIMESTAMP = datetime(2024, 1, 1, 0, 0, 0, tzinfo=timezone.utc)
@@ -312,7 +313,7 @@ class TestUpdateFromProduct:
         resolver.update_from_product(product, "mystore.myshopify.com")
 
         # No forward entry for variant without SKU
-        assert len([k for k in in_memory_cache.keys() if k.startswith("sku:")]) == 0
+        assert len([k for k in in_memory_cache.keys() if k.startswith("sku:")]) == 0  # noqa: SIM118 - CachePort.keys() is a real method (with a prefix filter), not a dict view
 
 
 # =============================================================================

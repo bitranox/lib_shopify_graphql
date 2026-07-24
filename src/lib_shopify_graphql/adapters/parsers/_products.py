@@ -77,7 +77,7 @@ def parse_metafield_type(type_str: str) -> MetafieldType:
     try:
         return MetafieldType(type_str)
     except ValueError:
-        logger.warning(f"Unknown metafield type '{type_str}', defaulting to SINGLE_LINE_TEXT_FIELD")
+        logger.warning("Unknown metafield type '%s', defaulting to SINGLE_LINE_TEXT_FIELD", type_str)
         return MetafieldType.SINGLE_LINE_TEXT_FIELD
 
 

@@ -151,9 +151,14 @@ The library uses a sentinel pattern for partial updates, allowing you to update 
 ```python
 from decimal import Decimal
 from lib_shopify_graphql import (
-    login, update_variant, update_variants_bulk,
-    set_inventory, adjust_inventory,
-    VariantUpdate, VariantUpdateRequest, UNSET,
+    login,
+    update_variant,
+    update_variants_bulk,
+    set_inventory,
+    adjust_inventory,
+    VariantUpdate,
+    VariantUpdateRequest,
+    UNSET,
 )
 
 session = login(credentials)

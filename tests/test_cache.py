@@ -12,7 +12,6 @@ from __future__ import annotations
 
 import json
 import time
-from pathlib import Path
 from typing import TYPE_CHECKING
 from unittest.mock import patch
 
@@ -21,6 +20,8 @@ import pytest
 from lib_shopify_graphql.adapters.cache_json import JsonFileCacheAdapter
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     pass
 
 
@@ -493,9 +494,8 @@ class TestJsonFileCacheLockTimeoutRetries:
             retry_count[0] += 1
             raise Timeout(str(cache.lock_path))
 
-        with patch.object(cache._lock, "acquire", side_effect=always_timeout):
-            with patch("lib_shopify_graphql.adapters.cache_json.time.sleep"):
-                result = cache.get("key")
+        with patch.object(cache._lock, "acquire", side_effect=always_timeout), patch("lib_shopify_graphql.adapters.cache_json.time.sleep"):
+            result = cache.get("key")
 
         assert result is None
         assert retry_count[0] == 2  # max_retries attempts
@@ -512,10 +512,9 @@ class TestJsonFileCacheLockTimeoutRetries:
             retry_count[0] += 1
             raise Timeout(str(cache.lock_path))
 
-        with patch.object(cache._lock, "acquire", side_effect=always_timeout):
-            with patch("lib_shopify_graphql.adapters.cache_json.time.sleep"):
-                # Should not raise
-                cache.set("key", "value")
+        with patch.object(cache._lock, "acquire", side_effect=always_timeout), patch("lib_shopify_graphql.adapters.cache_json.time.sleep"):
+            # Should not raise
+            cache.set("key", "value")
 
         # Retries should have been exhausted
         assert retry_count[0] == 2
@@ -575,9 +574,11 @@ class TestJsonFileCacheLockTimeoutRetries:
         def track_sleep(seconds: float) -> None:
             sleep_times.append(seconds)
 
-        with patch.object(cache._lock, "acquire", side_effect=always_timeout):
-            with patch("lib_shopify_graphql.adapters.cache_json.time.sleep", side_effect=track_sleep):
-                cache.get("key")
+        with (
+            patch.object(cache._lock, "acquire", side_effect=always_timeout),
+            patch("lib_shopify_graphql.adapters.cache_json.time.sleep", side_effect=track_sleep),
+        ):
+            cache.get("key")
 
         # Should have slept twice (not on final attempt)
         assert len(sleep_times) == 2
@@ -599,9 +600,11 @@ class TestJsonFileCacheLockTimeoutRetries:
         def track_sleep(seconds: float) -> None:
             sleep_times.append(seconds)
 
-        with patch.object(cache._lock, "acquire", side_effect=always_timeout):
-            with patch("lib_shopify_graphql.adapters.cache_json.time.sleep", side_effect=track_sleep):
-                cache.set("key", "value")
+        with (
+            patch.object(cache._lock, "acquire", side_effect=always_timeout),
+            patch("lib_shopify_graphql.adapters.cache_json.time.sleep", side_effect=track_sleep),
+        ):
+            cache.set("key", "value")
 
         # Should have slept twice (not on final attempt)
         assert len(sleep_times) == 2
@@ -731,9 +734,8 @@ class TestJsonFileCacheKeys:
         def always_timeout() -> None:
             raise Timeout(str(cache.lock_path))
 
-        with patch.object(cache._lock, "acquire", side_effect=always_timeout):
-            with patch("lib_shopify_graphql.adapters.cache_json.time.sleep"):
-                result = cache.keys()
+        with patch.object(cache._lock, "acquire", side_effect=always_timeout), patch("lib_shopify_graphql.adapters.cache_json.time.sleep"):
+            result = cache.keys()
 
         assert result == []
 
@@ -803,7 +805,7 @@ class TestCacheCheckResult:
 
     def test_is_not_consistent_with_mismatched(self) -> None:
         """is_consistent returns False with mismatched entries."""
-        from lib_shopify_graphql import CacheMismatch, CacheCheckResult
+        from lib_shopify_graphql import CacheCheckResult, CacheMismatch
 
         result = CacheCheckResult(
             total_cached=10,

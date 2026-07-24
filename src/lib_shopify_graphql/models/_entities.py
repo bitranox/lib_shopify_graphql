@@ -141,7 +141,7 @@ class ShopifyCredentials(BaseModel):
 
     @field_validator("shop_url")
     @classmethod
-    def validate_shop_url(_cls, v: str) -> str:  # noqa: N805 - cls required by Pydantic classmethod pattern
+    def validate_shop_url(cls, v: str) -> str:
         """Normalize and validate shop URL format.
 
         Strips protocol prefix and trailing slashes. Accepts both default
@@ -425,6 +425,7 @@ class ShopifySessionInfo(BaseModel):
 
 
 __all__ = [
+    "SEO",
     "Metafield",
     "Money",
     "PriceRange",
@@ -433,7 +434,6 @@ __all__ = [
     "ProductMedia",
     "ProductOption",
     "ProductVariant",
-    "SEO",
     "SelectedOption",
     "ShopifyCredentials",
     "ShopifySessionInfo",

@@ -14,14 +14,18 @@ Note:
 
 from __future__ import annotations
 
+from dataclasses import FrozenInstanceError
 from datetime import datetime, timezone
-from pathlib import Path
-from collections.abc import Sequence
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 from unittest.mock import MagicMock
 
 import pytest
 
+from lib_shopify_graphql.adapters.parsers import (  # type: ignore[reportPrivateUsage]
+    parse_graphql_errors,
+    parse_metafield_type,
+    parse_selected_options,
+)
 from lib_shopify_graphql.exceptions import (
     AuthenticationError,
     GraphQLError,
@@ -29,11 +33,6 @@ from lib_shopify_graphql.exceptions import (
     GraphQLErrorLocation,
     ProductNotFoundError,
     SessionNotActiveError,
-)
-from lib_shopify_graphql.adapters.parsers import (  # type: ignore[reportPrivateUsage]
-    parse_graphql_errors,
-    parse_metafield_type,
-    parse_selected_options,
 )
 from lib_shopify_graphql.models import MetafieldType, SelectedOption, ShopifyCredentials
 from lib_shopify_graphql.shopify_client import (
@@ -43,6 +42,9 @@ from lib_shopify_graphql.shopify_client import (
     logout,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Sequence
+    from pathlib import Path
 
 # =============================================================================
 # Test Fixtures
@@ -652,7 +654,7 @@ class TestGraphQLErrorLocationCreation:
         """GraphQLErrorLocation is frozen and cannot be modified."""
         location = GraphQLErrorLocation(line=5, column=10)
 
-        with pytest.raises(Exception):
+        with pytest.raises(FrozenInstanceError):
             location.line = 6  # type: ignore[misc]
 
 
@@ -2851,7 +2853,7 @@ class TestIterProductsMultiPagePagination:
 
         list(iter_products(session))
 
-        calls = cast(list[Any], session._graphql_client.execute.call_args_list)  # type: ignore[reportAttributeAccessIssue]
+        calls = cast("list[Any]", session._graphql_client.execute.call_args_list)  # type: ignore[reportAttributeAccessIssue]
         # First call should have no cursor (or after=None)
         first_vars: dict[str, Any] = calls[0][1].get("variables", calls[0][0][1] if len(calls[0][0]) > 1 else {})
         assert first_vars.get("after") is None  # First page has no cursor
@@ -2900,7 +2902,7 @@ class TestIterProductsMultiPagePagination:
 
         list(iter_products(session, query="status:active"))
 
-        calls = cast(list[Any], session._graphql_client.execute.call_args_list)  # type: ignore[reportAttributeAccessIssue]
+        calls = cast("list[Any]", session._graphql_client.execute.call_args_list)  # type: ignore[reportAttributeAccessIssue]
         for call in calls:
             vars_dict: dict[str, Any] = call[1].get("variables", call[0][1] if len(call[0]) > 1 else {})
             assert vars_dict.get("query") == "status:active"
@@ -3050,7 +3052,7 @@ class TestListProductsMultiPagePagination:
 
         list_products(session, query="vendor:TestVendor")
 
-        call = cast(Any, session._graphql_client.execute.call_args)  # type: ignore[reportAttributeAccessIssue]
+        call = cast("Any", session._graphql_client.execute.call_args)  # type: ignore[reportAttributeAccessIssue]
         vars_dict: dict[str, Any] = call[1].get("variables", call[0][1] if len(call[0]) > 1 else {})
         assert vars_dict.get("query") == "vendor:TestVendor"
 

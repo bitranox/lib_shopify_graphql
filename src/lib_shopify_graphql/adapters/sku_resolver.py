@@ -295,7 +295,7 @@ class CachedSKUResolver:
 
         if len(matches) > 1:
             variant_gids = [m["variant_gid"] for m in matches]
-            logger.warning(f"Ambiguous SKU '{sku}' found in {len(matches)} variants: {variant_gids}")
+            logger.warning("Ambiguous SKU '%s' found in %s variants: %s", sku, len(matches), variant_gids)
             raise AmbiguousSKUError(sku, variant_gids)
 
         # Single match - update cache and return
@@ -434,7 +434,7 @@ class CachedSKUResolver:
         for sku in skus:
             try:
                 results[sku] = self.resolve(sku, shop_url)
-            except AmbiguousSKUError:
+            except AmbiguousSKUError:  # noqa: PERF203 - isolate one SKU's ambiguity so the rest of the batch still resolves
                 results[sku] = None
         return results
 
@@ -485,8 +485,8 @@ class CachedSKUResolver:
             return matches
 
         except Exception as exc:
-            logger.warning(f"Failed to query Shopify for SKU '{sku}': {exc}")
+            logger.warning("Failed to query Shopify for SKU '%s': %s", sku, exc)
             return []
 
 
-__all__ = ["CachedSKUResolver", "SKUCacheEntry", "VARIANTS_BY_SKU_QUERY"]
+__all__ = ["VARIANTS_BY_SKU_QUERY", "CachedSKUResolver", "SKUCacheEntry"]

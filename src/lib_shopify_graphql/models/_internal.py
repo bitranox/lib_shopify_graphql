@@ -7,7 +7,7 @@ between "don't update" and "set to null" in partial update operations.
 from __future__ import annotations
 
 import ipaddress
-from typing import TypeVar, Union
+from typing import TypeVar
 
 
 class UnsetType:
@@ -54,7 +54,7 @@ _T = TypeVar("_T")
 
 # Type alias for optional update fields
 # Usage: Updatable[Decimal] can be Decimal | None | UnsetType
-Updatable = Union[_T, None, UnsetType]
+Updatable = _T | None | UnsetType
 """Type alias for fields in partial update models.
 
 - ``value``: Update the field to this value
@@ -99,7 +99,7 @@ def _check_private_ip(hostname: str) -> None:
 def _validate_shopify_domain(url: str) -> str:
     """Validate URL is a valid domain with SSRF protection."""
     _check_domain_format(url)
-    hostname = url.split(":")[0]
+    hostname = url.split(":", maxsplit=1)[0]
     _check_localhost(hostname)
     _check_private_ip(hostname)
     return url

@@ -14,15 +14,18 @@ Note:
 from __future__ import annotations
 
 import logging
+import stat
 import time
 from dataclasses import dataclass
-from pathlib import Path
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import orjson
 from filelock import FileLock, Timeout
 
 from .constants import DEFAULT_CACHE_RETRY_COUNT, DEFAULT_LOCK_TIMEOUT_SECONDS
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 logger = logging.getLogger(__name__)
 
@@ -138,7 +141,7 @@ class JsonFileCacheAdapter:
                         self._write_cache(cache_data)
                         return None
                     return entry.value
-            except Timeout:
+            except Timeout:  # noqa: PERF203 - retry-with-backoff needs the try inside the loop
                 if attempt < self.max_retries - 1:
                     # Exponential backoff: 0.1s, 0.2s, 0.4s, ...
                     backoff = 0.1 * (2**attempt)
@@ -148,10 +151,10 @@ class JsonFileCacheAdapter:
                     )
                     time.sleep(backoff)
                 else:
-                    logger.warning(f"Cache lock timeout after {self.max_retries} retries for key '{key}'")
+                    logger.warning("Cache lock timeout after %s retries for key '%s'", self.max_retries, key)
                     return None
             except Exception as exc:
-                logger.warning(f"Cache read error for key '{key}': {exc}")
+                logger.warning("Cache read error for key '%s': %s", key, exc)
                 return None
         return None
 
@@ -175,7 +178,7 @@ class JsonFileCacheAdapter:
                     )
                     self._write_cache(cache_data)
                     return
-            except Timeout:
+            except Timeout:  # noqa: PERF203 - retry-with-backoff needs the try inside the loop
                 if attempt < self.max_retries - 1:
                     backoff = 0.1 * (2**attempt)
                     logger.debug(
@@ -184,9 +187,9 @@ class JsonFileCacheAdapter:
                     )
                     time.sleep(backoff)
                 else:
-                    logger.warning(f"Cache lock timeout on set after {self.max_retries} retries for key '{key}'")
+                    logger.warning("Cache lock timeout on set after %s retries for key '%s'", self.max_retries, key)
             except Exception as exc:
-                logger.warning(f"Cache write error for key '{key}': {exc}")
+                logger.warning("Cache write error for key '%s': %s", key, exc)
                 return
 
     def delete(self, key: str) -> None:
@@ -202,9 +205,9 @@ class JsonFileCacheAdapter:
                     del cache_data[key]
                     self._write_cache(cache_data)
         except Timeout:
-            logger.warning(f"Cache lock timeout on delete for key '{key}'")
+            logger.warning("Cache lock timeout on delete for key '%s'", key)
         except Exception as exc:
-            logger.warning(f"Cache delete error for key '{key}': {exc}")
+            logger.warning("Cache delete error for key '%s': %s", key, exc)
 
     def clear(self) -> None:
         """Clear all cached entries."""
@@ -214,7 +217,7 @@ class JsonFileCacheAdapter:
         except Timeout:
             logger.warning("Cache lock timeout on clear")
         except Exception as exc:
-            logger.warning(f"Cache clear error: {exc}")
+            logger.warning("Cache clear error: %s", exc)
 
     def _read_cache(self) -> dict[str, CacheEntry]:
         """Read and parse the cache file.
@@ -232,17 +235,17 @@ class JsonFileCacheAdapter:
             raw_data = orjson.loads(self.cache_path.read_bytes())
             return {key: CacheEntry.from_dict(entry) for key, entry in raw_data.items()}
         except orjson.JSONDecodeError as exc:
-            logger.error(f"Cache file corrupted at '{self.cache_path}', resetting cache: {exc}")
+            logger.error("Cache file corrupted at '%s', resetting cache: %s", self.cache_path, exc)
             # Backup corrupted file for debugging
             backup_path = self.cache_path.with_suffix(".corrupted")
             try:
                 self.cache_path.rename(backup_path)
-                logger.info(f"Corrupted cache backed up to '{backup_path}'")
+                logger.info("Corrupted cache backed up to '%s'", backup_path)
             except OSError as backup_exc:
-                logger.warning(f"Failed to backup corrupted cache: {backup_exc}")
+                logger.warning("Failed to backup corrupted cache: %s", backup_exc)
             return {}
         except OSError as exc:
-            logger.warning(f"Cache read error for '{self.cache_path}': {exc}")
+            logger.warning("Cache read error for '%s': %s", self.cache_path, exc)
             return {}
 
     def _write_cache(self, cache_data: dict[str, CacheEntry]) -> None:
@@ -255,9 +258,6 @@ class JsonFileCacheAdapter:
         Args:
             cache_data: Cache data to write (dictionary of CacheEntry objects).
         """
-        import os
-        import stat
-
         # Create parent directory with restrictive permissions (owner only)
         self.cache_path.parent.mkdir(parents=True, exist_ok=True, mode=0o700)
 
@@ -267,7 +267,7 @@ class JsonFileCacheAdapter:
         # Set file permissions to owner read-write only (0o600)
         # This prevents other users from reading cached tokens
         try:
-            os.chmod(self.cache_path, stat.S_IRUSR | stat.S_IWUSR)
+            self.cache_path.chmod(stat.S_IRUSR | stat.S_IWUSR)
         except OSError:
             # On Windows or restricted filesystems, chmod may fail - log but continue
             logger.debug("Could not set restrictive file permissions on cache file")
@@ -288,7 +288,7 @@ class JsonFileCacheAdapter:
                     self._write_cache(cache_data)
                 return len(expired_keys)
         except Exception as exc:
-            logger.warning(f"Cache cleanup error: {exc}")
+            logger.warning("Cache cleanup error: %s", exc)
             return 0
 
     def keys(self, prefix: str | None = None) -> list[str]:
@@ -311,7 +311,7 @@ class JsonFileCacheAdapter:
                     if prefix:
                         return [k for k in valid_keys if k.startswith(prefix)]
                     return valid_keys
-            except Timeout:
+            except Timeout:  # noqa: PERF203 - retry-with-backoff needs the try inside the loop
                 if attempt < self.max_retries - 1:
                     backoff = 0.1 * (2**attempt)
                     logger.debug(
@@ -320,10 +320,10 @@ class JsonFileCacheAdapter:
                     )
                     time.sleep(backoff)
                 else:
-                    logger.warning(f"Cache lock timeout on keys after {self.max_retries} retries")
+                    logger.warning("Cache lock timeout on keys after %s retries", self.max_retries)
                     return []
             except Exception as exc:
-                logger.warning(f"Cache keys error: {exc}")
+                logger.warning("Cache keys error: %s", exc)
                 return []
         return []
 

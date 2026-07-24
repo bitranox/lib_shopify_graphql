@@ -10,6 +10,8 @@ from typing import TYPE_CHECKING
 
 if TYPE_CHECKING:
     from ..application.ports import SKUResolverPort
+    from ..models import Product, ProductUpdate, ProductVariant, VariantUpdate
+    from ._session import ShopifySession
 
 from ..adapters.mutations import (
     PRODUCT_UPDATE_MUTATION,
@@ -22,7 +24,6 @@ from ..adapters.parsers import (
     parse_variant_from_mutation,
 )
 from ..exceptions import GraphQLError, GraphQLErrorEntry, GraphQLErrorLocation, ProductNotFoundError, SessionNotActiveError, VariantNotFoundError
-from ..models import Product, ProductUpdate, ProductVariant, VariantUpdate
 from ..models._operations import (
     GraphQLErrorData,
     ProductUpdateResponse,
@@ -31,7 +32,6 @@ from ..models._operations import (
 )
 from ._common import _get_session_sku_resolver, _normalize_product_gid, _resolve_variant_identifier
 from ._products import get_product_by_id
-from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
 
@@ -128,7 +128,7 @@ def update_product(
         raise SessionNotActiveError("Session is not active. Please login first.")
 
     product_id = _normalize_product_gid(product_id)
-    logger.info(f"Updating product '{product_id}'")
+    logger.info("Updating product '%s'", product_id)
 
     try:
         product_input = build_product_input(product_id, update)
@@ -149,7 +149,7 @@ def update_product(
     except (ProductNotFoundError, GraphQLError):
         raise
     except Exception as exc:
-        logger.error(f"Failed to update product '{product_id}': {exc}")
+        logger.error("Failed to update product '%s': %s", product_id, exc)
         raise GraphQLError(f"Failed to update product: {exc}", query=PRODUCT_UPDATE_MUTATION) from exc
 
 
@@ -206,7 +206,7 @@ def update_variant(
     shop_url = session.get_credentials().shop_url
     resolver = _get_session_sku_resolver(session, sku_resolver)
     variant_gid = _resolve_variant_identifier(variant_id_or_sku, shop_url, resolver)
-    logger.info(f"Updating variant '{variant_gid}' (identifier='{variant_id_or_sku}')")
+    logger.info("Updating variant '%s' (identifier='%s')", variant_gid, variant_id_or_sku)
 
     try:
         if product_id is None:

@@ -5,7 +5,7 @@ sources in human-readable or JSON format. Keeps CLI layer thin by handling
 all formatting and display logic here.
 
 Contents:
-    * :func:`display_config` – displays configuration in requested format
+    * :func:`display_config` - displays configuration in requested format
 
 System Role:
     Lives in the behaviors layer. The CLI command delegates to this module for
@@ -15,19 +15,75 @@ System Role:
 
 from __future__ import annotations
 
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, NoReturn, cast
 
 import click
 import orjson
-from lib_layered_config import Config
 
 from .enums import OutputFormat
+
+if TYPE_CHECKING:
+    from lib_layered_config import Config
+
+
+def _exit_section_not_found(section: str) -> NoReturn:
+    """Report a missing/empty section and exit with a non-zero status."""
+    click.echo(f"Section '{section}' not found or empty", err=True)
+    raise SystemExit(1)
+
+
+def _format_toml_value(value: Any) -> str:
+    """Render a single value the way the TOML-like human display expects."""
+    if isinstance(value, (list, dict)):
+        return orjson.dumps(value).decode()
+    if isinstance(value, str):
+        return f'"{value}"'
+    return str(value)
+
+
+def _echo_toml_section(name: str, section_data: dict[str, Any]) -> None:
+    """Echo one `[name]` section header followed by its key = value lines."""
+    click.echo(f"\n[{name}]")
+    for key, value in section_data.items():
+        click.echo(f"  {key} = {_format_toml_value(value)}")
+
+
+def _display_json(config: Config, section: str | None) -> None:
+    """Display the config (or one section of it) as JSON."""
+    if section is None:
+        # Use lib_layered_config's built-in to_json method
+        click.echo(config.to_json(indent=2))
+        return
+
+    section_data = config.get(section, default={})
+    if not section_data:
+        _exit_section_not_found(section)
+    click.echo(orjson.dumps({section: section_data}, option=orjson.OPT_INDENT_2).decode())
+
+
+def _display_human(config: Config, section: str | None) -> None:
+    """Display the config (or one section of it) as TOML-like text."""
+    if section is not None:
+        section_data = config.get(section, default={})
+        if not section_data:
+            _exit_section_not_found(section)
+        _echo_toml_section(section, section_data)
+        return
+
+    # Show all configuration
+    data: dict[str, Any] = config.as_dict()
+    for section_name, section_data in data.items():
+        if isinstance(section_data, dict):
+            _echo_toml_section(section_name, cast("dict[str, Any]", section_data))
+        else:
+            click.echo(f"\n[{section_name}]")
+            click.echo(f"  {section_data}")
 
 
 def display_config(
     config: Config,
     *,
-    format: OutputFormat = OutputFormat.HUMAN,
+    format: OutputFormat = OutputFormat.HUMAN,  # noqa: A002 - public API: "format" mirrors the CLI --format option, keyword-only
     section: str | None = None,
 ) -> None:
     """Display the provided configuration in the requested format.
@@ -69,54 +125,10 @@ def display_config(
           }
         }
     """
-
-    # Output in requested format
     if format == OutputFormat.JSON:
-        if section:
-            # Show specific section as JSON
-            section_data = config.get(section, default={})
-            if section_data:
-                click.echo(orjson.dumps({section: section_data}, option=orjson.OPT_INDENT_2).decode())
-            else:
-                click.echo(f"Section '{section}' not found or empty", err=True)
-                raise SystemExit(1)
-        else:
-            # Use lib_layered_config's built-in to_json method
-            click.echo(config.to_json(indent=2))
+        _display_json(config, section)
     else:
-        # Human-readable format using lib_layered_config's as_dict
-        if section:
-            # Show specific section
-            section_data = config.get(section, default={})
-            if section_data:
-                click.echo(f"\n[{section}]")
-                for key, value in section_data.items():
-                    if isinstance(value, (list, dict)):
-                        click.echo(f"  {key} = {orjson.dumps(value).decode()}")
-                    elif isinstance(value, str):
-                        click.echo(f'  {key} = "{value}"')
-                    else:
-                        click.echo(f"  {key} = {value}")
-            else:
-                click.echo(f"Section '{section}' not found or empty", err=True)
-                raise SystemExit(1)
-        else:
-            # Show all configuration
-            data: dict[str, Any] = config.as_dict()
-            for section_name in data:
-                section_data: Any = data[section_name]
-                click.echo(f"\n[{section_name}]")
-                if isinstance(section_data, dict):
-                    dict_data = cast(dict[str, Any], section_data)
-                    for key, value in dict_data.items():
-                        if isinstance(value, (list, dict)):
-                            click.echo(f"  {key} = {orjson.dumps(value).decode()}")
-                        elif isinstance(value, str):
-                            click.echo(f'  {key} = "{value}"')
-                        else:
-                            click.echo(f"  {key} = {value}")
-                else:
-                    click.echo(f"  {section_data}")
+        _display_human(config, section)
 
 
 __all__ = [

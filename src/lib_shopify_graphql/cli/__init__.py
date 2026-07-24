@@ -18,12 +18,10 @@ and registers all commands.
 from __future__ import annotations
 
 import logging
-from collections.abc import Sequence
+from typing import TYPE_CHECKING
 
 import lib_log_rich.runtime
 import rich_click as click
-
-from .typed_click import option, version_option
 
 from .. import __init__conf__
 from ..adapters import PYMYSQL_AVAILABLE
@@ -75,6 +73,10 @@ from ._products import (
     register_product_commands,
 )
 from ._test_limits import register_test_limits_command
+from .typed_click import option, version_option
+
+if TYPE_CHECKING:
+    from collections.abc import Sequence
 
 logger = logging.getLogger(__name__)
 
@@ -112,7 +114,7 @@ _create_mysql_cache_adapter = create_mysql_cache_adapter
     help="Load configuration from a named profile (e.g., 'production', 'test')",
 )
 @click.pass_context
-def cli(ctx: click.Context, traceback: bool, profile: str | None) -> None:
+def cli(ctx: click.Context, *, traceback: bool, profile: str | None) -> None:
     """Root command storing global flags and syncing shared traceback state.
 
     Loads configuration once with the profile and stores it in the Click context
@@ -122,7 +124,7 @@ def cli(ctx: click.Context, traceback: bool, profile: str | None) -> None:
     config = get_config(profile=profile)
     init_logging(config)
     store_cli_context(ctx, traceback=traceback, config=config, profile=profile)
-    apply_traceback_preferences(traceback)
+    apply_traceback_preferences(enabled=traceback)
 
     if ctx.invoked_subcommand is None:
         # No subcommand: show help
@@ -194,11 +196,10 @@ def main(argv: Sequence[str] | None = None, *, restore_traceback: bool = True) -
 
 
 __all__ = [
-    # Main CLI components
-    "cli",
-    "main",
     # Constants
     "CLICK_CONTEXT_SETTINGS",
+    # Adapter constants
+    "PYMYSQL_AVAILABLE",
     "TRACEBACK_SUMMARY_LIMIT",
     "TRACEBACK_VERBOSE_LIMIT",
     # Re-exported types and utilities
@@ -208,14 +209,6 @@ __all__ = [
     "MySQLConfig",
     "OutputFormat",
     "TracebackState",
-    "apply_traceback_preferences",
-    "snapshot_traceback_state",
-    "restore_traceback_state",
-    # Adapter constants
-    "PYMYSQL_AVAILABLE",
-    # Session functions (for test patching)
-    "login",
-    "logout",
     # Internal functions (exported for tests)
     "_build_product_create_from_options",
     "_create_mysql_cache_adapter",
@@ -228,6 +221,15 @@ __all__ = [
     "_parse_product_create_json",
     "_read_json_input",
     "_strip_readonly_create_fields",
+    "apply_traceback_preferences",
+    # Main CLI components
+    "cli",
     # Click module (for test patching)
     "click",
+    # Session functions (for test patching)
+    "login",
+    "logout",
+    "main",
+    "restore_traceback_state",
+    "snapshot_traceback_state",
 ]

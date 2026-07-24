@@ -16,13 +16,21 @@ Coverage:
 
 from __future__ import annotations
 
-from pathlib import Path
-from typing import Any
+import contextlib
+from typing import TYPE_CHECKING, Any
 
 import pytest
 
+from lib_shopify_graphql.adapters import (
+    CachedSKUResolver,
+    CachedTokenProvider,
+    JsonFileCacheAdapter,
+    LocationResolver,
+)
 from lib_shopify_graphql.composition import (
     AdapterBundle,
+    _create_sku_cache_from_config,
+    _create_token_cache_from_config,
     create_adapters,
     create_cached_token_provider,
     create_json_cache,
@@ -32,18 +40,12 @@ from lib_shopify_graphql.composition import (
     get_default_sku_resolver,
     get_default_token_provider,
     reset_default_resolvers,
-    _create_sku_cache_from_config,
-    _create_token_cache_from_config,
-)
-from lib_shopify_graphql.adapters import (
-    CachedSKUResolver,
-    CachedTokenProvider,
-    JsonFileCacheAdapter,
-    LocationResolver,
 )
 
-from conftest import FakeGraphQLClient, FakeTokenProvider, InMemoryCache
+if TYPE_CHECKING:
+    from pathlib import Path
 
+    from conftest import FakeGraphQLClient, FakeTokenProvider, InMemoryCache
 
 # =============================================================================
 # create_adapters
@@ -459,7 +461,7 @@ class TestMySQLIndividualParametersSku:
         # Mock MySQLCacheAdapter.from_url to track calls
         created_params: dict[str, Any] = {}
 
-        def mock_from_url(connection_string: str, **kwargs: Any) -> "MySQLCacheAdapter":
+        def mock_from_url(connection_string: str, **kwargs: Any) -> MySQLCacheAdapter:
             created_params["connection_string"] = connection_string
             created_params.update(kwargs)
             raise ValueError("Mock: stop here")  # Stop before actual connection
@@ -474,10 +476,8 @@ class TestMySQLIndividualParametersSku:
             "database": "shared_db",
         }
 
-        try:
+        with contextlib.suppress(ValueError):  # Expected
             _create_sku_cache_from_config(config, mysql_config)
-        except ValueError:
-            pass  # Expected
 
         # Should use cache-level connection string, not shared config
         assert created_params["connection_string"] == "mysql://cache_user:pass@cache-host/cache_db"
@@ -491,7 +491,7 @@ class TestMySQLIndividualParametersSku:
 
         created_params: dict[str, Any] = {}
 
-        def mock_from_url(connection_string: str, **kwargs: Any) -> "MySQLCacheAdapter":
+        def mock_from_url(connection_string: str, **kwargs: Any) -> MySQLCacheAdapter:
             created_params["connection_string"] = connection_string
             created_params.update(kwargs)
             raise ValueError("Mock: stop here")
@@ -507,10 +507,8 @@ class TestMySQLIndividualParametersSku:
             "database": "individual_db",
         }
 
-        try:
+        with contextlib.suppress(ValueError):  # Expected
             _create_sku_cache_from_config(config, mysql_config)
-        except ValueError:
-            pass  # Expected
 
         # Should use shared connection string
         assert created_params["connection_string"] == "mysql://shared:pass@shared-host/shared_db"
@@ -575,7 +573,7 @@ class TestMySQLIndividualParametersToken:
 
         created_params: dict[str, Any] = {}
 
-        def mock_from_url(connection_string: str, **kwargs: Any) -> "MySQLCacheAdapter":
+        def mock_from_url(connection_string: str, **kwargs: Any) -> MySQLCacheAdapter:
             created_params.update(kwargs)
             raise ValueError("Mock: stop here")
 
@@ -587,10 +585,8 @@ class TestMySQLIndividualParametersToken:
             "auto_create_database": False,
         }
 
-        try:
+        with contextlib.suppress(ValueError):
             _create_token_cache_from_config(config, mysql_config)
-        except ValueError:
-            pass
 
         assert created_params["connect_timeout"] == 30
         assert created_params["auto_create_database"] is False

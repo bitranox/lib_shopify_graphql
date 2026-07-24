@@ -7,11 +7,13 @@ from __future__ import annotations
 
 import itertools
 import logging
-from collections.abc import Iterator
 from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
+    from collections.abc import Iterator
+
     from ..application.ports import SKUResolverPort
+    from ._session import ShopifySession
 
 from ..adapters.mutations import (
     PRODUCT_CREATE_MUTATION,
@@ -49,7 +51,6 @@ from ..models import (
 )
 from ..models._operations import UserErrorData
 from ._common import _check_graphql_errors, _get_session_sku_resolver, _normalize_product_gid
-from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
 
@@ -94,7 +95,7 @@ def get_product_by_id(
 
     shop_url = session.get_credentials().shop_url
     product_id = _normalize_product_gid(product_id)
-    logger.info(f"Fetching product '{product_id}' from shop '{shop_url}'")
+    logger.info("Fetching product '%s' from shop '%s'", product_id, shop_url)
 
     try:
         data = session.execute_graphql(PRODUCT_QUERY, variables={"id": product_id})
@@ -105,12 +106,12 @@ def get_product_by_id(
         if sku_resolver is not None:
             sku_resolver.update_from_product(product, shop_url)
 
-        logger.info(f"Successfully fetched product '{product.title}' ({product_id})")
+        logger.info("Successfully fetched product '%s' (%s)", product.title, product_id)
         return product
     except (ProductNotFoundError, GraphQLError):
         raise
     except Exception as exc:
-        logger.error(f"Failed to fetch product '{product_id}': {exc}")
+        logger.error("Failed to fetch product '%s': %s", product_id, exc)
         raise GraphQLError(f"Failed to fetch product: {exc}", query=PRODUCT_QUERY) from exc
 
 
@@ -180,7 +181,7 @@ def list_products_paginated(
 
     page_info_msg = "first page" if after is None else "next page"
     filter_msg = f', filter: "{query}"' if query else ""
-    logger.info(f"Fetching products ({page_info_msg}, up to {first} products{filter_msg})...")
+    logger.info("Fetching products (%s, up to %s products%s)...", page_info_msg, first, filter_msg)
 
     try:
         data = session.execute_graphql(PRODUCTS_LIST_QUERY, variables=variables)
@@ -196,13 +197,13 @@ def list_products_paginated(
             _update_sku_cache_from_products(sku_resolver, result.products, session.get_credentials().shop_url)
 
         more_msg = ", more pages available" if result.page_info.has_next_page else ", no more pages"
-        logger.info(f"Fetched {len(result.products)} products{more_msg}")
+        logger.info("Fetched %s products%s", len(result.products), more_msg)
         return result
 
     except GraphQLError:
         raise
     except Exception as exc:
-        logger.error(f"Failed to list products: {exc}")
+        logger.error("Failed to list products: %s", exc)
         raise GraphQLError(f"Failed to list products: {exc}", query=PRODUCTS_LIST_QUERY) from exc
 
 
@@ -325,13 +326,13 @@ def _query_variant_product(session: ShopifySession, variant_gid: str, sku: str) 
         if "errors" in data:
             parsed_errors = parse_graphql_errors(data["errors"])
             logger.warning(
-                f"GraphQL error resolving variant to product: sku='{sku}', variant_gid='{variant_gid}', errors={format_graphql_errors(parsed_errors)}"
+                "GraphQL error resolving variant to product: sku='%s', variant_gid='%s', errors=%s", sku, variant_gid, format_graphql_errors(parsed_errors)
             )
             return None
 
         product_data = data.get("data", {}).get("productVariant", {}).get("product")
         if product_data is None:
-            logger.warning(f"Variant has no parent product: sku='{sku}', variant_gid='{variant_gid}'")
+            logger.warning("Variant has no parent product: sku='%s', variant_gid='%s'", sku, variant_gid)
             return None
 
         product_id = product_data["id"]
@@ -342,7 +343,7 @@ def _query_variant_product(session: ShopifySession, variant_gid: str, sku: str) 
         return product_id
 
     except Exception as exc:
-        logger.warning(f"Failed to resolve variant to product: sku='{sku}', variant_gid='{variant_gid}', error={exc}")
+        logger.warning("Failed to resolve variant to product: sku='%s', variant_gid='%s', error=%s", sku, variant_gid, exc)
         return None
 
 
@@ -401,7 +402,7 @@ def get_product_id_from_sku(
     variant_gids = resolver.resolve_all(sku)
 
     if not variant_gids:
-        logger.info(f"SKU '{sku}' not found")
+        logger.info("SKU '%s' not found", sku)
         return []
 
     # Use set to deduplicate (multiple variants on same product)
@@ -413,7 +414,7 @@ def get_product_id_from_sku(
             product_ids.add(product_id)
 
     result = list(product_ids)
-    logger.info(f"Resolved SKU '{sku}' to {len(result)} product(s) from {len(variant_gids)} variant(s)")
+    logger.info("Resolved SKU '%s' to %s product(s) from %s variant(s)", sku, len(result), len(variant_gids))
     return result
 
 
@@ -482,7 +483,7 @@ def _process_variant_for_cache(
         True if variant has SKU, False otherwise.
     """
     if not variant.sku:
-        logger.warning(f"Variant without SKU: product='{product.title}' ({product.id}), variant='{variant.title}' ({variant.id})")
+        logger.warning("Variant without SKU: product='%s' (%s), variant='%s' (%s)", product.title, product.id, variant.title, variant.id)
         return False
 
     seen_skus.setdefault(variant.sku, []).append(variant.id)
@@ -495,7 +496,7 @@ def _log_duplicate_skus(seen_skus: dict[str, list[str]]) -> int:
     for sku, variant_ids in seen_skus.items():
         if len(variant_ids) > 1:
             duplicate_count += 1
-            logger.warning(f"Duplicate SKU '{sku}' found in {len(variant_ids)} variants: {variant_ids}")
+            logger.warning("Duplicate SKU '%s' found in %s variants: %s", sku, len(variant_ids), variant_ids)
     return duplicate_count
 
 
@@ -542,7 +543,7 @@ def skucache_rebuild(
     seen_skus: dict[str, list[str]] = {}
 
     filter_msg = f' with filter "{query}"' if query else ""
-    logger.info(f"Starting cache rebuild for shop '{shop_url}'{filter_msg}")
+    logger.info("Starting cache rebuild for shop '%s'%s", shop_url, filter_msg)
 
     for product in iter_products(session, query=query, sku_resolver=sku_resolver):
         for variant in product.variants:
@@ -552,7 +553,7 @@ def skucache_rebuild(
 
     duplicate_count = _log_duplicate_skus(seen_skus)
 
-    logger.info(f"Cache rebuild complete: {total_variants} variants, {variants_without_sku} without SKU, {duplicate_count} duplicate SKUs")
+    logger.info("Cache rebuild complete: %s variants, %s without SKU, %s duplicate SKUs", total_variants, variants_without_sku, duplicate_count)
     return total_variants
 
 
@@ -594,7 +595,7 @@ def create_product(
         raise SessionNotActiveError("Session is not active. Please login first.")
 
     shop_url = session.get_credentials().shop_url
-    logger.info(f"Creating product '{product.title}' in shop '{shop_url}'")
+    logger.info("Creating product '%s' in shop '%s'", product.title, shop_url)
 
     try:
         product_input = build_product_create_input(product)
@@ -616,19 +617,20 @@ def create_product(
         if sku_resolver is not None:
             sku_resolver.update_from_product(created_product, shop_url)
 
-        logger.info(f"Product created successfully: '{created_product.title}' ({created_product.id})")
+        logger.info("Product created successfully: '%s' (%s)", created_product.title, created_product.id)
         return created_product
 
     except GraphQLError:
         raise
     except Exception as exc:
-        logger.error(f"Failed to create product '{product.title}': {exc}")
+        logger.error("Failed to create product '%s': %s", product.title, exc)
         raise GraphQLError(f"Failed to create product: {exc}", query=PRODUCT_CREATE_MUTATION) from exc
 
 
 def _build_duplicate_variables(
     product_gid: str,
     new_title: str,
+    *,
     include_images: bool,
     new_status: ProductStatus | None,
 ) -> dict[str, Any]:
@@ -664,7 +666,7 @@ def _check_duplicate_user_errors(user_errors: list[UserErrorData], product_gid: 
     raise GraphQLError(f"Product duplication failed: {error_messages}", query=PRODUCT_DUPLICATE_MUTATION)
 
 
-def duplicate_product(
+def duplicate_product(  # noqa: PLR0913 - public API: required args plus optional DI seam (sku_resolver) for testability
     session: ShopifySession,
     product_id: str,
     new_title: str,
@@ -700,10 +702,10 @@ def duplicate_product(
     shop_url = session.get_credentials().shop_url
     product_gid = _normalize_product_gid(product_id)
 
-    logger.info(f"Duplicating product '{product_gid}' with new title '{new_title}'")
+    logger.info("Duplicating product '%s' with new title '%s'", product_gid, new_title)
 
     try:
-        variables = _build_duplicate_variables(product_gid, new_title, include_images, new_status)
+        variables = _build_duplicate_variables(product_gid, new_title, include_images=include_images, new_status=new_status)
         data = session.execute_graphql(PRODUCT_DUPLICATE_MUTATION, variables=variables)
 
         _check_duplicate_graphql_errors(data, product_gid)
@@ -722,13 +724,13 @@ def duplicate_product(
         if sku_resolver is not None:
             sku_resolver.update_from_product(new_product, shop_url)
 
-        logger.info(f"Product duplicated successfully: {product_gid} -> {new_product.id}")
+        logger.info("Product duplicated successfully: %s -> %s", product_gid, new_product.id)
         return DuplicateProductResult(new_product=new_product, original_product_id=product_gid)
 
     except (ProductNotFoundError, GraphQLError):
         raise
     except Exception as exc:
-        logger.error(f"Failed to duplicate product '{product_gid}': {exc}")
+        logger.error("Failed to duplicate product '%s': %s", product_gid, exc)
         raise GraphQLError(f"Failed to duplicate product: {exc}", query=PRODUCT_DUPLICATE_MUTATION) from exc
 
 
@@ -781,8 +783,8 @@ def _invalidate_sku_cache(
     for sku in variant_skus:
         try:
             sku_resolver.invalidate(sku, shop_url)
-        except Exception as cache_exc:
-            logger.warning(f"Failed to invalidate SKU cache entry: sku='{sku}', error={cache_exc}")
+        except Exception as cache_exc:  # noqa: PERF203 - isolate one SKU's cache failure so the rest of the batch still invalidates
+            logger.warning("Failed to invalidate SKU cache entry: sku='%s', error=%s", sku, cache_exc)
 
 
 def delete_product(
@@ -825,7 +827,7 @@ def delete_product(
     # Collect variant SKUs before deletion for cache invalidation
     variant_skus = _collect_variant_skus(session, product_gid) if sku_resolver else []
 
-    logger.info(f"Deleting product '{product_gid}' from shop '{shop_url}'")
+    logger.info("Deleting product '%s' from shop '%s'", product_gid, shop_url)
 
     try:
         data = session.execute_graphql(
@@ -846,16 +848,16 @@ def delete_product(
 
         if sku_resolver and variant_skus:
             _invalidate_sku_cache(sku_resolver, variant_skus, shop_url)
-            logger.info(f"Product deleted successfully: {deleted_id}, cleared {len(variant_skus)} SKU cache entries")
+            logger.info("Product deleted successfully: %s, cleared %s SKU cache entries", deleted_id, len(variant_skus))
         else:
-            logger.info(f"Product deleted successfully: {deleted_id}")
+            logger.info("Product deleted successfully: %s", deleted_id)
 
         return DeleteProductResult(deleted_product_id=deleted_id)
 
     except (ProductNotFoundError, GraphQLError):
         raise
     except Exception as exc:
-        logger.error(f"Failed to delete product '{product_gid}': {exc}")
+        logger.error("Failed to delete product '%s': %s", product_gid, exc)
         raise GraphQLError(f"Failed to delete product: {exc}", query=PRODUCT_DELETE_MUTATION) from exc
 
 

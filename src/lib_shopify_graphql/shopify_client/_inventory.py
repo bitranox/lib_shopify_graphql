@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ..application.ports import LocationResolverPort, SKUResolverPort
+    from ._session import ShopifySession
 
 from ..adapters.mutations import (
     INVENTORY_ADJUST_QUANTITIES_MUTATION,
@@ -20,7 +21,6 @@ from ..exceptions import GraphQLError, SessionNotActiveError, VariantNotFoundErr
 from ..models import InventoryLevel, InventoryQuantityName, InventoryReason
 from ..models._operations import UserErrorData
 from ._common import _check_graphql_errors, _get_session_sku_resolver, _resolve_variant_identifier
-from ._session import ShopifySession
 
 logger = logging.getLogger(__name__)
 
@@ -124,7 +124,7 @@ def _build_adjust_quantities_input(
     }
 
 
-def set_inventory(
+def set_inventory(  # noqa: PLR0913 - public API: required args plus optional DI seams (sku_resolver/location_resolver) for testability
     session: ShopifySession,
     variant_id_or_sku: str,
     quantity: int,
@@ -175,7 +175,7 @@ def set_inventory(
     variant_gid = _resolve_variant_identifier(variant_id_or_sku, shop_url, resolver)
     resolved_location = _resolve_location(location_id, location_resolver)
 
-    logger.info(f"Setting inventory for variant '{variant_gid}' to {quantity} at location '{resolved_location}'")
+    logger.info("Setting inventory for variant '%s' to %s at location '%s'", variant_gid, quantity, resolved_location)
 
     try:
         inventory_item_id = _get_inventory_item_id(session, variant_gid)
@@ -193,11 +193,11 @@ def set_inventory(
     except (VariantNotFoundError, GraphQLError):
         raise
     except Exception as exc:
-        logger.error(f"Failed to set inventory for variant '{variant_id_or_sku}': {exc}")
+        logger.error("Failed to set inventory for variant '%s': %s", variant_id_or_sku, exc)
         raise GraphQLError(f"Failed to set inventory: {exc}", query=INVENTORY_SET_QUANTITIES_MUTATION) from exc
 
 
-def adjust_inventory(
+def adjust_inventory(  # noqa: PLR0913 - public API: required args plus optional DI seams (sku_resolver/location_resolver) for testability
     session: ShopifySession,
     variant_id_or_sku: str,
     delta: int,
@@ -248,7 +248,7 @@ def adjust_inventory(
     variant_gid = _resolve_variant_identifier(variant_id_or_sku, shop_url, resolver)
     resolved_location = _resolve_location(location_id, location_resolver)
 
-    logger.info(f"Adjusting inventory for variant '{variant_gid}' by {delta:+d} at location '{resolved_location}'")
+    logger.info("Adjusting inventory for variant '%s' by %+d at location '%s'", variant_gid, delta, resolved_location)
 
     try:
         inventory_item_id = _get_inventory_item_id(session, variant_gid)

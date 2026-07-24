@@ -24,22 +24,20 @@ _env_file = Path(__file__).parent.parent / ".env"
 if _env_file.exists():
     load_dotenv(_env_file)
 
-import os  # noqa: E402
-import re  # noqa: E402
-import sys  # noqa: E402
-import time  # noqa: E402
-from collections.abc import Callable, Iterator  # noqa: E402
-from dataclasses import dataclass, field, fields  # noqa: E402
-from datetime import datetime, timezone  # noqa: E402
-from decimal import Decimal  # noqa: E402
-from typing import Any  # noqa: E402
+import os
+import re
+import sys
+import time
+from dataclasses import dataclass, field, fields
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import TYPE_CHECKING, Any
 
-import pytest  # noqa: E402
-from click.testing import CliRunner  # noqa: E402
+import lib_cli_exit_tools
+import pytest
+from click.testing import CliRunner
 
-import lib_cli_exit_tools  # noqa: E402
-
-from lib_shopify_graphql.models import (  # noqa: E402
+from lib_shopify_graphql.models import (
     Money,
     Product,
     ProductImage,
@@ -49,6 +47,8 @@ from lib_shopify_graphql.models import (  # noqa: E402
     ShopifyCredentials,
 )
 
+if TYPE_CHECKING:
+    from collections.abc import Callable, Iterator
 
 # =============================================================================
 # Constants
@@ -83,7 +83,7 @@ class MockConfig:
     def __init__(self, data: dict[str, Any] | None = None) -> None:
         self._data: dict[str, Any] = data or {}
 
-    def get(self, key: str, default: Any = None) -> Any:  # noqa: ANN401
+    def get(self, key: str, default: Any = None) -> Any:
         """Get nested config value using dot-notation key."""
         parts = key.split(".")
         value: Any = self._data

@@ -121,7 +121,7 @@ class TestProductListing:
 
     def test_list_products_returns_list(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """list_products returns a list of Product objects."""
@@ -135,7 +135,7 @@ class TestProductListing:
 
     def test_list_products_finds_test_product(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """list_products can find the test product."""
@@ -153,7 +153,7 @@ class TestProductListing:
 
     def test_list_products_max_products_limits_results(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
     ) -> None:
         """max_products parameter limits the number of returned products."""
         from lib_shopify_graphql import list_products
@@ -164,7 +164,7 @@ class TestProductListing:
 
     def test_list_products_query_filter_works(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """Query filter correctly filters products."""
@@ -189,7 +189,7 @@ class TestIterProducts:
 
     def test_iter_products_yields_products(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
     ) -> None:
         """iter_products yields Product objects."""
         from lib_shopify_graphql import iter_products
@@ -206,7 +206,7 @@ class TestIterProducts:
 
     def test_iter_products_finds_test_product(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """iter_products can find the test product with query filter."""
@@ -225,7 +225,7 @@ class TestIterProducts:
 
     def test_iter_products_is_lazy(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
     ) -> None:
         """iter_products returns an iterator, not a list."""
         from collections.abc import Iterator
@@ -245,7 +245,7 @@ class TestListProductsPaginated:
 
     def test_list_products_paginated_returns_connection(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
     ) -> None:
         """list_products_paginated returns a ProductConnection."""
         from lib_shopify_graphql import ProductConnection, list_products_paginated
@@ -258,7 +258,7 @@ class TestListProductsPaginated:
 
     def test_list_products_paginated_page_info(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
     ) -> None:
         """list_products_paginated includes valid page_info."""
         from lib_shopify_graphql import list_products_paginated
@@ -271,7 +271,7 @@ class TestListProductsPaginated:
 
     def test_list_products_paginated_cursor_pagination(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
     ) -> None:
         """list_products_paginated cursor pagination works correctly."""
         from lib_shopify_graphql import list_products_paginated
@@ -299,7 +299,7 @@ class TestListProductsPaginated:
 
     def test_list_products_paginated_query_filter(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """list_products_paginated query filter works."""
@@ -536,8 +536,8 @@ class TestSKUCacheRebuild:
         test_product: Product,
     ) -> None:
         """skucache_rebuild returns count of cached variants."""
-        from pathlib import Path
         import tempfile
+        from pathlib import Path
 
         from lib_shopify_graphql import skucache_rebuild
         from lib_shopify_graphql.composition import create_json_cache, create_sku_resolver
@@ -563,8 +563,8 @@ class TestSKUCacheRebuild:
         test_product: Product,
     ) -> None:
         """skucache_rebuild populates SKU-to-GID mappings in cache."""
-        from pathlib import Path
         import tempfile
+        from pathlib import Path
 
         from lib_shopify_graphql import skucache_rebuild
         from lib_shopify_graphql.composition import create_json_cache, create_sku_resolver
@@ -596,8 +596,8 @@ class TestSKUCacheRebuild:
         test_product: Product,
     ) -> None:
         """skucache_clear removes all cached SKU mappings."""
-        from pathlib import Path
         import tempfile
+        from pathlib import Path
 
         from lib_shopify_graphql import skucache_clear, skucache_rebuild
         from lib_shopify_graphql.composition import create_json_cache, create_sku_resolver
@@ -641,11 +641,11 @@ class TestTokenCache:
 
     def test_cached_token_provider_caches_token(
         self,
-        integration_credentials: "ShopifyCredentials | None",
+        integration_credentials: ShopifyCredentials | None,
     ) -> None:
         """CachedTokenProvider caches the token after first fetch."""
-        from pathlib import Path
         import tempfile
+        from pathlib import Path
 
         from lib_shopify_graphql.composition import (
             create_cached_token_provider,
@@ -686,11 +686,11 @@ class TestTokenCache:
 
     def test_tokencache_clear_forces_refetch(
         self,
-        integration_credentials: "ShopifyCredentials | None",
+        integration_credentials: ShopifyCredentials | None,
     ) -> None:
         """Clearing token cache forces a new token fetch."""
-        from pathlib import Path
         import tempfile
+        from pathlib import Path
 
         from lib_shopify_graphql import tokencache_clear
         from lib_shopify_graphql.composition import (
@@ -744,11 +744,11 @@ class TestTokenCache:
         self,
         integration_session: ShopifySession,
         test_product: Product,
-        integration_credentials: "ShopifyCredentials",
+        integration_credentials: ShopifyCredentials,
     ) -> None:
         """cache_clear_all clears both token and SKU caches."""
-        from pathlib import Path
         import tempfile
+        from pathlib import Path
 
         from lib_shopify_graphql import cache_clear_all, skucache_rebuild
         from lib_shopify_graphql.composition import (
@@ -812,7 +812,7 @@ class TestImageOperations:
 
     def test_create_image_from_url(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """create_image can add an image from an external URL."""
@@ -837,7 +837,7 @@ class TestImageOperations:
 
     def test_create_image_from_file(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """create_image can upload an image from a local file."""
@@ -878,7 +878,7 @@ class TestImageOperations:
 
     def test_update_image_alt_text(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """update_image can change the alt text of an image."""
@@ -901,7 +901,7 @@ class TestImageOperations:
 
     def test_delete_image(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """delete_image can remove an image from a product."""
@@ -932,7 +932,7 @@ class TestImageOperations:
 
     def test_reorder_images(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """reorder_images can change the order of product images."""
@@ -985,7 +985,7 @@ class TestCLICommands:
 
     def test_cli_10_get_product(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """CLI get-product returns product data as JSON."""
@@ -1009,7 +1009,7 @@ class TestCLICommands:
 
     def test_cli_11_update_product_title(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """CLI update-product can update the title."""
@@ -1034,7 +1034,7 @@ class TestCLICommands:
 
     def test_cli_12_update_product_vendor(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """CLI update-product can update the vendor."""
@@ -1059,7 +1059,7 @@ class TestCLICommands:
 
     def test_cli_20_add_image_from_url(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """CLI add-image can add an image from URL."""
@@ -1099,7 +1099,7 @@ class TestCLICommands:
 
     def test_cli_21_update_image(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """CLI update-image can update alt text."""
@@ -1137,7 +1137,7 @@ class TestCLICommands:
 
     def test_cli_22_delete_image(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """CLI delete-image can delete an image."""
@@ -1178,7 +1178,7 @@ class TestCLICommands:
 
     def test_cli_23_reorder_images(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
     ) -> None:
         """CLI reorder-images can reorder product images."""
@@ -1229,7 +1229,7 @@ class TestCLICommands:
 
     def test_cli_30_health(
         self,
-        integration_credentials: "ShopifyCredentials | None",
+        integration_credentials: ShopifyCredentials | None,
     ) -> None:
         """CLI health command checks API connectivity."""
         from click.testing import CliRunner
@@ -1279,10 +1279,10 @@ class TestCLICommands:
 
     def test_cli_00_skucache_clear(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI skucache-clear clears the SKU cache."""
         from click.testing import CliRunner
@@ -1328,8 +1328,8 @@ class TestCLICommands:
 
     def test_cli_01_tokencache_clear(
         self,
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI tokencache-clear clears the token cache."""
         from click.testing import CliRunner
@@ -1360,10 +1360,10 @@ class TestCLICommands:
 
     def test_cli_02_cache_clear_all(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI cache-clear-all clears both token and SKU caches."""
         from click.testing import CliRunner
@@ -1414,10 +1414,10 @@ class TestCLICommands:
 
     def test_cli_03_skucache_rebuild(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI skucache-rebuild rebuilds the SKU cache."""
         from click.testing import CliRunner
@@ -1471,9 +1471,9 @@ class TestCLICommands:
 
     def test_cli_40_create_product(
         self,
-        integration_session: "ShopifySession",
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        integration_session: ShopifySession,
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI create-product creates a product and we clean it up."""
         import json
@@ -1533,10 +1533,10 @@ class TestCLICommands:
 
     def test_cli_41_duplicate_product(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI duplicate-product duplicates a product and we clean it up."""
         import json
@@ -1596,10 +1596,10 @@ class TestCLICommands:
 
     def test_cli_42_delete_product(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI delete-product deletes a product.
 
@@ -1680,9 +1680,9 @@ class TestCLICommands:
 
     def test_cli_91_skucache_check_api(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
-        tmp_path: "Path",
+        tmp_path: Path,
     ) -> None:
         """Verify SKU cache consistency after all other tests.
 
@@ -1725,10 +1725,10 @@ class TestCLICommands:
 
     def test_cli_50_test_limits(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI test-limits checks for GraphQL limit truncation."""
         from click.testing import CliRunner
@@ -1774,10 +1774,10 @@ class TestCLICommands:
 
     def test_cli_90_skucache_check(
         self,
-        integration_session: "ShopifySession",
+        integration_session: ShopifySession,
         test_product: Product,
-        tmp_path: "Path",
-        monkeypatch: "pytest.MonkeyPatch",
+        tmp_path: Path,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         """CLI skucache-check verifies cache consistency."""
         from click.testing import CliRunner

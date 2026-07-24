@@ -11,13 +11,15 @@ This module contains models for:
 from __future__ import annotations
 
 from datetime import datetime
-from typing import Any, cast
+from typing import TYPE_CHECKING, Any, cast
 
 from pydantic import BaseModel, ConfigDict, Field, model_validator
-from typing_extensions import Self
 
 from ._entities import Product, ProductVariant
 from ._mutations import ProductUpdate, VariantUpdate
+
+if TYPE_CHECKING:
+    from typing_extensions import Self
 
 
 class VariantUpdateRequest(BaseModel):
@@ -404,7 +406,7 @@ class UserErrorData(BaseModel):
     @classmethod
     def _normalize_field_to_strings(  # type: ignore[reportUnknownVariableType]
         cls, data: Any
-    ) -> Any:  # noqa: ANN401
+    ) -> Any:
         """Convert integer indices in field path to strings.
 
         Shopify may return field paths like ["variants", 0, "price"] with integer
@@ -418,7 +420,7 @@ class UserErrorData(BaseModel):
         # Don't mutate input, create a new dict with normalized field
         result: dict[str, Any] = dict(data)  # type: ignore[reportUnknownArgumentType]
         # Convert all items to strings (handles both str and int indices)
-        str_field: list[str] = [str(item) for item in cast(list[Any], field_value)]
+        str_field: list[str] = [str(item) for item in cast("list[Any]", field_value)]
         result["field"] = str_field
         return result
 
@@ -729,24 +731,24 @@ class TruncationInfo(BaseModel):
 __all__ = [
     # Update request/result
     "BulkUpdateResult",
-    "ProductUpdateRequest",
-    "UpdateFailure",
-    "UpdateSuccess",
-    "VariantUpdateRequest",
-    # Inventory
-    "InventoryLevel",
-    # Pagination
-    "PageInfo",
-    "ProductConnection",
-    # Metafield deletion
-    "MetafieldDeleteFailure",
-    "MetafieldDeleteResult",
-    "MetafieldIdentifier",
     # Product lifecycle
     "DeleteProductResult",
     "DuplicateProductResult",
     # Truncation analysis
     "FieldTruncationInfo",
+    # Inventory
+    "InventoryLevel",
+    # Metafield deletion
+    "MetafieldDeleteFailure",
+    "MetafieldDeleteResult",
+    "MetafieldIdentifier",
+    # Pagination
+    "PageInfo",
+    "ProductConnection",
+    "ProductUpdateRequest",
     "TruncationFields",
     "TruncationInfo",
+    "UpdateFailure",
+    "UpdateSuccess",
+    "VariantUpdateRequest",
 ]

@@ -24,7 +24,7 @@ name = "lib_shopify_graphql"
 #: Human-readable summary shown in CLI help output.
 title = "Python library for Shopify GraphQL API interactions"
 #: Current release version pulled from ``pyproject.toml`` by automation.
-version = "2.0.7"
+version = "2.0.8"
 #: Repository homepage presented to users.
 homepage = "https://github.com/bitranox/lib_shopify_graphql"
 #: Author attribution surfaced in CLI output.
@@ -71,4 +71,4 @@ def print_info() -> None:
     pad = max(len(label) for label, _ in fields)
     lines = [f"Info for {name}:", ""]
     lines.extend(f"    {label.ljust(pad)} = {value}" for label, value in fields)
-    print("\n".join(lines))
+    print("\n".join(lines))  # noqa: T201 - this module is dependency-free by design; printing IS the feature

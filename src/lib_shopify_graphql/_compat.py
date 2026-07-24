@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import sys
 
-if sys.version_info >= (3, 11):  # noqa: UP036 - intentional, we support Python 3.10
+if sys.version_info >= (3, 11):
     from enum import StrEnum
 else:
     from enum import Enum
