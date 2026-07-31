@@ -17,6 +17,7 @@ from typing import TYPE_CHECKING, Any
 import lib_log_rich.runtime
 import rich_click as click
 
+from .. import safe_console
 from ..adapters import (
     CachedSKUResolver,
     JsonFileCacheAdapter,
@@ -193,50 +194,50 @@ def create_sku_cache_from_config(config: Config) -> CachePort | None:
 
 def _display_skucache_summary(result: Any, shop_url: str) -> None:
     """Display SKU cache check summary."""
-    click.echo("")
-    click.echo("SKU Cache Consistency Check")
-    click.echo("━" * 30)
-    click.echo(f"Shop: {shop_url}")
-    click.echo("")
-    click.echo(f"Cached entries:  {result.total_cached}")
-    click.echo(f"Shopify entries: {result.total_shopify}")
-    click.echo("")
-    click.echo("Summary:")
-    click.echo(f"  ✓ Valid:      {result.valid}")
-    click.echo(f"  ⚠ Stale:      {len(result.stale)}  (in cache but not in Shopify)")
-    click.echo(f"  ⚠ Missing:    {len(result.missing)}  (in Shopify but not in cache)")
-    click.echo(f"  ✗ Mismatched: {len(result.mismatched)}")
+    safe_console.echo("")
+    safe_console.echo("SKU Cache Consistency Check")
+    safe_console.echo("━" * 30)
+    safe_console.echo(f"Shop: {shop_url}")
+    safe_console.echo("")
+    safe_console.echo(f"Cached entries:  {result.total_cached}")
+    safe_console.echo(f"Shopify entries: {result.total_shopify}")
+    safe_console.echo("")
+    safe_console.echo("Summary:")
+    safe_console.echo(f"  ✓ Valid:      {result.valid}")
+    safe_console.echo(f"  ⚠ Stale:      {len(result.stale)}  (in cache but not in Shopify)")
+    safe_console.echo(f"  ⚠ Missing:    {len(result.missing)}  (in Shopify but not in cache)")
+    safe_console.echo(f"  ✗ Mismatched: {len(result.mismatched)}")
 
 
 def _display_list_with_limit(items: tuple[str, ...] | list[str], limit: int, prefix: str = "") -> None:
     """Display a list with truncation after limit items."""
     for item in items[:limit]:
-        click.echo(f"{prefix}{item}")
+        safe_console.echo(f"{prefix}{item}")
     if len(items) > limit:
-        click.echo(f"  ... and {len(items) - limit} more")
+        safe_console.echo(f"  ... and {len(items) - limit} more")
 
 
 def _display_skucache_details(result: Any) -> None:
     """Display detailed SKU cache inconsistencies."""
     if result.stale:
-        click.echo("")
-        click.echo("Stale entries (cached but no longer in Shopify):")
+        safe_console.echo("")
+        safe_console.echo("Stale entries (cached but no longer in Shopify):")
         _display_list_with_limit(result.stale, limit=20, prefix="  • ")
 
     if result.missing:
-        click.echo("")
-        click.echo("Missing entries (in Shopify but not cached):")
+        safe_console.echo("")
+        safe_console.echo("Missing entries (in Shopify but not cached):")
         _display_list_with_limit(result.missing, limit=20, prefix="  • ")
 
     if result.mismatched:
-        click.echo("")
-        click.echo("Mismatched entries (different GIDs):")
+        safe_console.echo("")
+        safe_console.echo("Mismatched entries (different GIDs):")
         for mismatch in result.mismatched[:_MISMATCH_DISPLAY_LIMIT]:
-            click.echo(f"  • {mismatch.sku}")
-            click.echo(f"      Cached:  {mismatch.cached_variant_gid}")
-            click.echo(f"      Actual:  {mismatch.actual_variant_gid}")
+            safe_console.echo(f"  • {mismatch.sku}")
+            safe_console.echo(f"      Cached:  {mismatch.cached_variant_gid}")
+            safe_console.echo(f"      Actual:  {mismatch.actual_variant_gid}")
         if len(result.mismatched) > _MISMATCH_DISPLAY_LIMIT:
-            click.echo(f"  ... and {len(result.mismatched) - _MISMATCH_DISPLAY_LIMIT} more")
+            safe_console.echo(f"  ... and {len(result.mismatched) - _MISMATCH_DISPLAY_LIMIT} more")
 
 
 # =============================================================================
@@ -294,19 +295,19 @@ def register_cache_commands(
         with lib_log_rich.runtime.bind(job_id="cli-tokencache-clear", extra=extra):
             cache = create_token_cache_from_config(config)
             if cache is None:
-                click.echo("Token caching is not configured.", err=True)
-                click.echo("Enable it in your config:", err=True)
-                click.echo("  [shopify.token_cache]", err=True)
-                click.echo("  enabled = true", err=True)
-                click.echo('  json_path = "/path/to/token_cache.json"', err=True)
+                safe_console.echo("Token caching is not configured.", err=True)
+                safe_console.echo("Enable it in your config:", err=True)
+                safe_console.echo("  [shopify.token_cache]", err=True)
+                safe_console.echo("  enabled = true", err=True)
+                safe_console.echo('  json_path = "/path/to/token_cache.json"', err=True)
                 raise SystemExit(0)
 
             logger.info("Clearing token cache for profile '%s'", effective_profile)
             try:
                 tokencache_clear(cache)
-                click.echo("✓ Token cache cleared.")
+                safe_console.echo("✓ Token cache cleared.")
             except Exception as exc:
-                click.echo(f"Error clearing token cache: {exc}", err=True)
+                safe_console.echo(f"Error clearing token cache: {exc}", err=True)
                 logger.error("Failed to clear token cache: %s", exc)
                 raise SystemExit(1) from exc
 
@@ -351,18 +352,18 @@ def register_cache_commands(
         with lib_log_rich.runtime.bind(job_id="cli-skucache-clear", extra=extra):
             cache = create_sku_cache_from_config(config)
             if cache is None:
-                click.echo("SKU caching is not configured.", err=True)
-                click.echo("Enable it in your config:", err=True)
-                click.echo("  [shopify.sku_cache]", err=True)
-                click.echo('  json_path = "/path/to/sku_cache.json"', err=True)
+                safe_console.echo("SKU caching is not configured.", err=True)
+                safe_console.echo("Enable it in your config:", err=True)
+                safe_console.echo("  [shopify.sku_cache]", err=True)
+                safe_console.echo('  json_path = "/path/to/sku_cache.json"', err=True)
                 raise SystemExit(0)
 
             logger.info("Clearing SKU cache for profile '%s'", effective_profile)
             try:
                 skucache_clear(cache)
-                click.echo("✓ SKU cache cleared.")
+                safe_console.echo("✓ SKU cache cleared.")
             except Exception as exc:
-                click.echo(f"Error clearing SKU cache: {exc}", err=True)
+                safe_console.echo(f"Error clearing SKU cache: {exc}", err=True)
                 logger.error("Failed to clear SKU cache: %s", exc)
                 raise SystemExit(1) from exc
 
@@ -397,8 +398,8 @@ def register_cache_commands(
             sku_cache = create_sku_cache_from_config(config)
 
             if token_cache is None and sku_cache is None:
-                click.echo("No caches are configured.", err=True)
-                click.echo("Configure caching in your config file.", err=True)
+                safe_console.echo("No caches are configured.", err=True)
+                safe_console.echo("Configure caching in your config file.", err=True)
                 raise SystemExit(0)
 
             logger.info("Clearing all caches for profile '%s'", effective_profile)
@@ -411,9 +412,9 @@ def register_cache_commands(
                 if sku_cache is not None:
                     cleared.append("SKU mappings")
 
-                click.echo(f"✓ Cleared: {', '.join(cleared)}.")
+                safe_console.echo(f"✓ Cleared: {', '.join(cleared)}.")
             except Exception as exc:
-                click.echo(f"Error clearing caches: {exc}", err=True)
+                safe_console.echo(f"Error clearing caches: {exc}", err=True)
                 logger.error("Failed to clear caches: %s", exc)
                 raise SystemExit(1) from exc
 
@@ -448,27 +449,27 @@ def register_cache_commands(
             # Check SKU cache is configured
             sku_cache = create_sku_cache_from_config(config)
             if sku_cache is None:
-                click.echo("SKU caching is not configured.", err=True)
-                click.echo("Enable it in your config:", err=True)
-                click.echo("  [shopify.sku_cache]", err=True)
-                click.echo('  json_path = "/path/to/sku_cache.json"', err=True)
+                safe_console.echo("SKU caching is not configured.", err=True)
+                safe_console.echo("Enable it in your config:", err=True)
+                safe_console.echo("  [shopify.sku_cache]", err=True)
+                safe_console.echo('  json_path = "/path/to/sku_cache.json"', err=True)
                 raise SystemExit(1)
 
             # Extract credentials
             credentials = get_credentials_or_exit(config)
 
             # Login and rebuild
-            click.echo(f"Connecting to {credentials.shop_url}...")
+            safe_console.echo(f"Connecting to {credentials.shop_url}...")
             try:
                 with shopify_session(credentials) as session:
-                    click.echo("✓ Connected")
+                    safe_console.echo("✓ Connected")
 
                     # Create SKU resolver with the cache
                     sku_resolver = CachedSKUResolver(sku_cache, session._graphql_client)
 
-                    click.echo("Rebuilding SKU cache (this may take a while)...")
+                    safe_console.echo("Rebuilding SKU cache (this may take a while)...")
                     if query:
-                        click.echo(f"  Filter: {query}")
+                        safe_console.echo(f"  Filter: {query}")
 
                     total_variants = skucache_rebuild(
                         session,
@@ -476,12 +477,12 @@ def register_cache_commands(
                         query=query,
                     )
 
-                    click.echo(f"✓ Cache rebuilt: {total_variants} variants cached")
+                    safe_console.echo(f"✓ Cache rebuilt: {total_variants} variants cached")
                     logger.info("Cache rebuild complete: %s variants cached", total_variants)
 
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"\n✗ Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"\n✗ Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
     @cli_group.command("skucache-check", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -521,25 +522,25 @@ def register_cache_commands(
 
             credentials = get_credentials_or_exit(config)
 
-            click.echo(f"Connecting to {credentials.shop_url}...")
+            safe_console.echo(f"Connecting to {credentials.shop_url}...")
             try:
                 with shopify_session(credentials) as session:
-                    click.echo("✓ Connected")
+                    safe_console.echo("✓ Connected")
 
-                    click.echo("Checking SKU cache consistency (this may take a while)...")
+                    safe_console.echo("Checking SKU cache consistency (this may take a while)...")
                     if query:
-                        click.echo(f"  Filter: {query}")
+                        safe_console.echo(f"  Filter: {query}")
 
                     result = skucache_check(session, sku_cache, query=query)
 
                     _display_skucache_summary(result, credentials.shop_url)
                     _display_skucache_details(result)
 
-                    click.echo("")
+                    safe_console.echo("")
                     if result.is_consistent:
-                        click.echo("✓ Cache is consistent with Shopify")
+                        safe_console.echo("✓ Cache is consistent with Shopify")
                     else:
-                        click.echo("✗ Cache has inconsistencies - consider running 'skucache-rebuild'")
+                        safe_console.echo("✗ Cache has inconsistencies - consider running 'skucache-rebuild'")
 
                     logger.info(
                         "Cache check complete: %s valid, %s stale, %s missing, %s mismatched",
@@ -553,8 +554,8 @@ def register_cache_commands(
                         raise SystemExit(1)
 
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"\n✗ Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"\n✗ Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
 

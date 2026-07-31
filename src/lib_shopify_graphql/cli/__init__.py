@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING
 import lib_log_rich.runtime
 import rich_click as click
 
-from .. import __init__conf__
+from .. import __init__conf__, safe_console
 from ..adapters import PYMYSQL_AVAILABLE
 from ..config import get_config
 from ..enums import OutputFormat
@@ -128,7 +128,7 @@ def cli(ctx: click.Context, *, traceback: bool, profile: str | None) -> None:
 
     if ctx.invoked_subcommand is None:
         # No subcommand: show help
-        click.echo(ctx.get_help())
+        safe_console.echo(ctx.get_help())
 
 
 # =============================================================================

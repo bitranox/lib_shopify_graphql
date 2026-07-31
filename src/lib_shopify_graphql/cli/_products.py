@@ -19,6 +19,7 @@ import lib_log_rich.runtime
 import orjson
 import rich_click as click
 
+from .. import safe_console
 from ..adapters import CachedSKUResolver
 from ..enums import OutputFormat
 from ..exceptions import AuthenticationError, GraphQLError, ProductNotFoundError
@@ -62,29 +63,29 @@ def _output_product(product: Product, output_format: OutputFormat) -> None:
     """
     if output_format == OutputFormat.JSON:
         data = product.model_dump(mode="json")
-        click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
+        safe_console.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
     else:
-        click.echo(f"\nProduct: {product.title}")
-        click.echo("─" * 50)
-        click.echo(f"  ID:           {product.id}")
-        click.echo(f"  Handle:       {product.handle}")
-        click.echo(f"  Status:       {product.status.value}")
-        click.echo(f"  Vendor:       {product.vendor or '-'}")
-        click.echo(f"  Type:         {product.product_type or '-'}")
-        click.echo(f"  Tags:         {', '.join(product.tags) if product.tags else '-'}")
-        click.echo(f"  Variants:     {len(product.variants)}")
-        click.echo(f"  Images:       {len(product.images)}")
-        click.echo(f"  Created:      {product.created_at.isoformat()}")
-        click.echo(f"  Updated:      {product.updated_at.isoformat()}")
+        safe_console.echo(f"\nProduct: {product.title}")
+        safe_console.echo("─" * 50)
+        safe_console.echo(f"  ID:           {product.id}")
+        safe_console.echo(f"  Handle:       {product.handle}")
+        safe_console.echo(f"  Status:       {product.status.value}")
+        safe_console.echo(f"  Vendor:       {product.vendor or '-'}")
+        safe_console.echo(f"  Type:         {product.product_type or '-'}")
+        safe_console.echo(f"  Tags:         {', '.join(product.tags) if product.tags else '-'}")
+        safe_console.echo(f"  Variants:     {len(product.variants)}")
+        safe_console.echo(f"  Images:       {len(product.images)}")
+        safe_console.echo(f"  Created:      {product.created_at.isoformat()}")
+        safe_console.echo(f"  Updated:      {product.updated_at.isoformat()}")
 
 
 def _output_delete_result(result: DeleteProductResult, output_format: OutputFormat) -> None:
     """Output delete result in requested format."""
     if output_format == OutputFormat.JSON:
         data = {"deleted_product_id": result.deleted_product_id, "success": result.success}
-        click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
+        safe_console.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
     else:
-        click.echo(f"\n✓ Product deleted: {result.deleted_product_id}")
+        safe_console.echo(f"\n✓ Product deleted: {result.deleted_product_id}")
 
 
 # =============================================================================
@@ -102,10 +103,10 @@ def _read_json_input(json_input: str) -> dict[str, object]:
         with Path(json_input).open("rb") as f:
             return orjson.loads(f.read())
     except orjson.JSONDecodeError as exc:
-        click.echo(f"Invalid JSON: {exc}", err=True)
+        safe_console.echo(f"Invalid JSON: {exc}", err=True)
         raise SystemExit(1) from exc
     except FileNotFoundError:
-        click.echo(f"File not found: {json_input}", err=True)
+        safe_console.echo(f"File not found: {json_input}", err=True)
         raise SystemExit(1) from None
 
 
@@ -174,7 +175,7 @@ def _parse_product_create_json(json_input: str) -> ProductCreate:
     try:
         return ProductCreate.model_validate(data)
     except Exception as exc:
-        click.echo(f"Invalid product data: {exc}", err=True)
+        safe_console.echo(f"Invalid product data: {exc}", err=True)
         raise SystemExit(1) from exc
 
 
@@ -192,7 +193,7 @@ def _build_product_create_from_options(
 ) -> ProductCreate:
     """Build ProductCreate from CLI options."""
     if not title:
-        click.echo("Error: --title is required when not using --json", err=True)
+        safe_console.echo("Error: --title is required when not using --json", err=True)
         raise SystemExit(1)
 
     tag_list = [t.strip() for t in tags.split(",")] if tags else None
@@ -268,7 +269,7 @@ def _parse_product_update_json(json_input: str) -> ProductUpdate:
     try:
         return ProductUpdate.model_validate(update_data)
     except Exception as exc:
-        click.echo(f"Invalid update data: {exc}", err=True)
+        safe_console.echo(f"Invalid update data: {exc}", err=True)
         raise SystemExit(1) from exc
 
 
@@ -305,8 +306,8 @@ def _build_product_update_from_options(
 
 def _confirm_delete(product_id: str) -> bool:
     """Prompt user to confirm product deletion."""
-    click.echo(f"WARNING: This will permanently delete product {product_id}")
-    click.echo("All variants, inventory, and associated data will be lost.")
+    safe_console.echo(f"WARNING: This will permanently delete product {product_id}")
+    safe_console.echo("All variants, inventory, and associated data will be lost.")
     return click.confirm("Are you sure you want to continue?", default=False)
 
 
@@ -393,11 +394,11 @@ def register_product_commands(
                     product = get_product_by_id(session, product_id)
                     _output_product(product, output_format)
             except ProductNotFoundError:
-                click.echo(f"Product not found: {product_id}", err=True)
+                safe_console.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
     @cli_group.command("create-product", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -490,8 +491,8 @@ def register_product_commands(
                     logger.info("Product created: id='%s'", product.id)
                     _output_product(product, output_format)
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
     @cli_group.command("duplicate-product", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -559,11 +560,11 @@ def register_product_commands(
                     logger.info("Product duplicated: original='%s', new='%s'", result.original_product_id, result.new_product.id)
                     _output_product(result.new_product, output_format)
             except ProductNotFoundError:
-                click.echo(f"Source product not found: {product_id}", err=True)
+                safe_console.echo(f"Source product not found: {product_id}", err=True)
                 raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
     @cli_group.command("delete-product", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -596,7 +597,7 @@ def register_product_commands(
 
         with lib_log_rich.runtime.bind(job_id="cli-delete-product", extra=extra):
             if not force and not _confirm_delete(product_id):
-                click.echo("Aborted.")
+                safe_console.echo("Aborted.")
                 raise SystemExit(0)
 
             logger.info("Deleting product '%s'", product_id)
@@ -611,11 +612,11 @@ def register_product_commands(
                     logger.info("Product deleted: id='%s'", result.deleted_product_id)
                     _output_delete_result(result, output_format)
             except ProductNotFoundError:
-                click.echo(f"Product not found: {product_id}", err=True)
+                safe_console.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
     @cli_group.command("update-product", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -711,11 +712,11 @@ def register_product_commands(
                     logger.info("Product updated: id='%s'", product.id)
                     _output_product(product, output_format)
             except ProductNotFoundError:
-                click.echo(f"Product not found: {product_id}", err=True)
+                safe_console.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
 

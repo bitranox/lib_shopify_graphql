@@ -28,7 +28,7 @@ if TYPE_CHECKING:
     from ..models import ShopifyCredentials
     from ..shopify_client import ShopifySession
 
-from .. import __init__conf__
+from .. import __init__conf__, safe_console
 from ..config import get_config
 
 E = TypeVar("E", bound=Enum)
@@ -361,26 +361,26 @@ def shopify_session(credentials: ShopifyCredentials) -> Generator[ShopifySession
 
 def exit_with_error(message: str, code: int = 1) -> NoReturn:
     """Print error message and exit with the given code."""
-    click.echo(f"Error: {message}", err=True)
+    safe_console.echo(f"Error: {message}", err=True)
     raise SystemExit(code)
 
 
 def exit_mysql_not_available() -> NoReturn:
     """Exit with error message about PyMySQL not being installed."""
-    click.echo("Error: PyMySQL is not installed. Install with: pip install lib_shopify_graphql[mysql]", err=True)
+    safe_console.echo("Error: PyMySQL is not installed. Install with: pip install lib_shopify_graphql[mysql]", err=True)
     raise SystemExit(1)
 
 
 def exit_sku_cache_not_configured() -> NoReturn:
     """Exit with error message about SKU cache not being configured."""
-    click.echo("Error: SKU cache is not configured.", err=True)
-    click.echo("", err=True)
-    click.echo("Configure SKU cache in your configuration file:", err=True)
-    click.echo("", err=True)
-    click.echo("  [shopify.sku_cache]", err=True)
-    click.echo("  enabled = true", err=True)
-    click.echo('  backend = "json"  # or "mysql"', err=True)
-    click.echo('  json_path = "/path/to/sku_cache.json"', err=True)
+    safe_console.echo("Error: SKU cache is not configured.", err=True)
+    safe_console.echo("", err=True)
+    safe_console.echo("Configure SKU cache in your configuration file:", err=True)
+    safe_console.echo("", err=True)
+    safe_console.echo("  [shopify.sku_cache]", err=True)
+    safe_console.echo("  enabled = true", err=True)
+    safe_console.echo('  backend = "json"  # or "mysql"', err=True)
+    safe_console.echo('  json_path = "/path/to/sku_cache.json"', err=True)
     raise SystemExit(1)
 
 

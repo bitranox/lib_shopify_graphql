@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, Any
 import lib_log_rich.runtime
 import rich_click as click
 
+from .. import safe_console
 from ..adapters.parsers import get_truncation_info
 from ..adapters.queries import PRODUCTS_LIST_QUERY, get_limits_from_config
 from ..exceptions import AuthenticationError, GraphQLError
@@ -72,22 +73,22 @@ class _TruncationAnalysis:
 
 def _display_current_limits(limits: Any) -> None:
     """Display current GraphQL limits configuration."""
-    click.echo("Current Product GraphQL Limits:")
-    click.echo("─" * 50)
-    click.echo(f"  product_max_images:             {limits.product_max_images}")
-    click.echo(f"  product_max_media:              {limits.product_max_media}")
-    click.echo(f"  product_max_options:            {limits.product_max_options}")
-    click.echo(f"  product_max_metafields:         {limits.product_max_metafields}")
-    click.echo(f"  product_max_variants:           {limits.product_max_variants}")
-    click.echo(f"  product_max_variant_metafields: {limits.product_max_variant_metafields}")
-    click.echo(f"  product_iter_page_size:         {limits.product_iter_page_size}")
-    click.echo()
+    safe_console.echo("Current Product GraphQL Limits:")
+    safe_console.echo("─" * 50)
+    safe_console.echo(f"  product_max_images:             {limits.product_max_images}")
+    safe_console.echo(f"  product_max_media:              {limits.product_max_media}")
+    safe_console.echo(f"  product_max_options:            {limits.product_max_options}")
+    safe_console.echo(f"  product_max_metafields:         {limits.product_max_metafields}")
+    safe_console.echo(f"  product_max_variants:           {limits.product_max_variants}")
+    safe_console.echo(f"  product_max_variant_metafields: {limits.product_max_variant_metafields}")
+    safe_console.echo(f"  product_iter_page_size:         {limits.product_iter_page_size}")
+    safe_console.echo()
 
 
 def _display_max_values(analysis: _TruncationAnalysis, limits: Any) -> None:
     """Display maximum values found during analysis."""
-    click.echo("Maximum Values Found:")
-    click.echo("─" * 70)
+    safe_console.echo("Maximum Values Found:")
+    safe_console.echo("─" * 70)
 
     field_configs = [
         ("images", "images            ", limits.product_max_images),
@@ -102,17 +103,17 @@ def _display_max_values(analysis: _TruncationAnalysis, limits: Any) -> None:
         product = info.product or "N/A"
         truncated_suffix = " (TRUNCATED!)" if info.truncated else ""
         status = "✗" if info.truncated else ("⚠" if info.count >= field_limit else "✓")
-        click.echo(f"  {status} {display_name}: {info.count:4d}/{field_limit}{truncated_suffix}")
-        click.echo(f"      Max on: {product}")
+        safe_console.echo(f"  {status} {display_name}: {info.count:4d}/{field_limit}{truncated_suffix}")
+        safe_console.echo(f"      Max on: {product}")
 
-    click.echo()
+    safe_console.echo()
 
 
 def _display_truncation_issues(issues: list[TruncationInfo]) -> dict[str, list[tuple[str, str, int]]]:
     """Display individual truncation issues and return field summary."""
-    click.echo(f"✗ TRUNCATION DETECTED in {len(issues)} product(s):")
-    click.echo("  Data is being lost! Increase the affected limits.")
-    click.echo()
+    safe_console.echo(f"✗ TRUNCATION DETECTED in {len(issues)} product(s):")
+    safe_console.echo("  Data is being lost! Increase the affected limits.")
+    safe_console.echo()
 
     field_summary: dict[str, list[tuple[str, str, int]]] = {}
 
@@ -134,11 +135,11 @@ def _display_truncation_issues(issues: list[TruncationInfo]) -> dict[str, list[t
             if not field_info.truncated:
                 continue
             field_summary.setdefault(field_name, []).append((title, short_id, field_info.count))
-            click.echo(f"  Product: '{title}' (ID: {short_id})")
-            click.echo(f"    {field_name}: {field_info.count}+ items (TRUNCATED)")
+            safe_console.echo(f"  Product: '{title}' (ID: {short_id})")
+            safe_console.echo(f"    {field_name}: {field_info.count}+ items (TRUNCATED)")
             if field_info.cost_warning:
-                click.echo(f"    ⚠ {field_info.cost_warning}")
-            click.echo()
+                safe_console.echo(f"    ⚠ {field_info.cost_warning}")
+            safe_console.echo()
 
     return field_summary
 
@@ -158,26 +159,26 @@ def _display_recommendations(
     limits: Any,
 ) -> None:
     """Display recommendations for fixing truncation issues."""
-    click.echo("─" * 50)
-    click.echo("REQUIRED CHANGES:")
-    click.echo()
+    safe_console.echo("─" * 50)
+    safe_console.echo("REQUIRED CHANGES:")
+    safe_console.echo()
 
     for field_name, affected in field_summary.items():
         max_truncated = max(count for _, _, count in affected)
         config_key, env_var = _find_config_info(field_name, truncation_issues)
         suggested = max(max_truncated + 10, int(max_truncated * 1.5))
 
-        click.echo(f"  {field_name.upper()}: {len(affected)} product(s) truncated")
-        click.echo(f"    Current limit: {getattr(limits, config_key, '?') if config_key else '?'}")
-        click.echo(f"    Max found: {max_truncated}+ (actual count unknown)")
-        click.echo(f"    Suggested: {suggested}")
-        click.echo(f"    → Set [graphql] {config_key} = {suggested}")
-        click.echo(f"    → Or: {env_var}={suggested}")
-        click.echo()
+        safe_console.echo(f"  {field_name.upper()}: {len(affected)} product(s) truncated")
+        safe_console.echo(f"    Current limit: {getattr(limits, config_key, '?') if config_key else '?'}")
+        safe_console.echo(f"    Max found: {max_truncated}+ (actual count unknown)")
+        safe_console.echo(f"    Suggested: {suggested}")
+        safe_console.echo(f"    → Set [graphql] {config_key} = {suggested}")
+        safe_console.echo(f"    → Or: {env_var}={suggested}")
+        safe_console.echo()
 
-    click.echo("WARNING: When increasing limits for list operations (list_products,")
-    click.echo("iter_products), monitor for MAX_COST_EXCEEDED errors. You may need to")
-    click.echo("reduce page_size or use get_product_by_id for products with many items.")
+    safe_console.echo("WARNING: When increasing limits for list operations (list_products,")
+    safe_console.echo("iter_products), monitor for MAX_COST_EXCEEDED errors. You may need to")
+    safe_console.echo("reduce page_size or use get_product_by_id for products with many items.")
 
 
 # =============================================================================
@@ -244,16 +245,16 @@ def _analyze_products(
             analysis.total_products += 1
 
             if max_products and analysis.total_products >= max_products:
-                click.echo(f"\r  Analyzed {analysis.total_products} products...")
+                safe_console.echo(f"\r  Analyzed {analysis.total_products} products...")
                 return analysis
 
-        click.echo(f"\r  Analyzed {analysis.total_products} products...", nl=False)
+        safe_console.echo(f"\r  Analyzed {analysis.total_products} products...", nl=False)
 
         if not page_info.get("hasNextPage"):
             break
         cursor = page_info.get("endCursor")
 
-    click.echo()
+    safe_console.echo()
     return analysis
 
 
@@ -306,32 +307,32 @@ def register_test_limits_command(
 
             _display_current_limits(limits)
 
-            click.echo(f"Connecting to {credentials.shop_url}...")
+            safe_console.echo(f"Connecting to {credentials.shop_url}...")
             try:
                 with shopify_session(credentials) as session:
-                    click.echo("✓ Connected")
-                    click.echo()
+                    safe_console.echo("✓ Connected")
+                    safe_console.echo()
 
-                    click.echo(f"Analyzing {'up to ' + str(limit) if limit else 'all'} products...")
+                    safe_console.echo(f"Analyzing {'up to ' + str(limit) if limit else 'all'} products...")
                     if query:
-                        click.echo(f"  Filter: {query}")
+                        safe_console.echo(f"  Filter: {query}")
 
                     analysis = _analyze_products(session, limits, query, limit)
 
                     if analysis.total_products == 0:
-                        click.echo("No products found.")
+                        safe_console.echo("No products found.")
                         return
 
-                    click.echo(f"✓ Analyzed {analysis.total_products} products")
-                    click.echo()
+                    safe_console.echo(f"✓ Analyzed {analysis.total_products} products")
+                    safe_console.echo()
 
                     _display_max_values(analysis, limits)
 
                     if not analysis.truncation_issues:
-                        click.echo("✓ No truncation detected!")
-                        click.echo()
-                        click.echo("All products returned complete data.")
-                        click.echo("Your current configuration is sufficient for this catalog.")
+                        safe_console.echo("✓ No truncation detected!")
+                        safe_console.echo()
+                        safe_console.echo("All products returned complete data.")
+                        safe_console.echo("Your current configuration is sufficient for this catalog.")
                     else:
                         field_summary = _display_truncation_issues(analysis.truncation_issues)
                         _display_recommendations(field_summary, analysis.truncation_issues, limits)
@@ -339,8 +340,8 @@ def register_test_limits_command(
                         raise SystemExit(1)
 
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"\n✗ Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"\n✗ Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
 

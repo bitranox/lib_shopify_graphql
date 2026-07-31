@@ -14,6 +14,7 @@ from urllib.error import URLError
 import lib_log_rich.runtime
 import rich_click as click
 
+from .. import safe_console
 from ..exceptions import AuthenticationError, GraphQLError
 from ..models import ShopifyCredentials
 from ..shopify_client import login, logout
@@ -158,8 +159,8 @@ def get_credentials_or_exit(config: Config) -> ShopifyCredentials:
     try:
         return extract_shopify_credentials_from_config(config)
     except ValueError as exc:
-        click.echo(f"Configuration error: {exc}", err=True)
-        click.echo(get_fix_suggestion(exc, None), err=True)
+        safe_console.echo(f"Configuration error: {exc}", err=True)
+        safe_console.echo(get_fix_suggestion(exc, None), err=True)
         raise SystemExit(1) from exc
 
 
@@ -220,27 +221,27 @@ def format_health_output(result: HealthCheckResult) -> None:
     Args:
         result: HealthCheckResult to display.
     """
-    click.echo("\nShopify Health Check")
-    click.echo("─" * 40)
+    safe_console.echo("\nShopify Health Check")
+    safe_console.echo("─" * 40)
 
     if result.success:
-        click.echo(f"  Shop:           {result.shop_name}")
-        click.echo(f"  Shop URL:       {result.shop_url}")
-        click.echo(f"  API Version:    {result.api_version}")
+        safe_console.echo(f"  Shop:           {result.shop_name}")
+        safe_console.echo(f"  Shop URL:       {result.shop_url}")
+        safe_console.echo(f"  API Version:    {result.api_version}")
         if result.token_expiration:
             expiry_str = result.token_expiration.strftime("%Y-%m-%d %H:%M:%S UTC")
-            click.echo(f"  Token Expires:  {expiry_str}")
-        click.echo("")
-        click.echo("✓ Connection successful.")
+            safe_console.echo(f"  Token Expires:  {expiry_str}")
+        safe_console.echo("")
+        safe_console.echo("✓ Connection successful.")
     else:
-        click.echo(f"✗ ERROR: {result.error_type}", err=True)
-        click.echo("", err=True)
-        click.echo(f"  Error: {result.error_message}", err=True)
+        safe_console.echo(f"✗ ERROR: {result.error_type}", err=True)
+        safe_console.echo("", err=True)
+        safe_console.echo(f"  Error: {result.error_message}", err=True)
         if result.shop_url:
-            click.echo(f"  Shop:  {result.shop_url}", err=True)
-        click.echo("", err=True)
-        click.echo("To fix:", err=True)
-        click.echo(result.fix_suggestion, err=True)
+            safe_console.echo(f"  Shop:  {result.shop_url}", err=True)
+        safe_console.echo("", err=True)
+        safe_console.echo("To fix:", err=True)
+        safe_console.echo(result.fix_suggestion, err=True)
 
 
 # =============================================================================

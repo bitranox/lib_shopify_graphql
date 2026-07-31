@@ -17,9 +17,9 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, NoReturn, cast
 
-import click
 import orjson
 
+from . import safe_console
 from .enums import OutputFormat
 
 if TYPE_CHECKING:
@@ -28,7 +28,7 @@ if TYPE_CHECKING:
 
 def _exit_section_not_found(section: str) -> NoReturn:
     """Report a missing/empty section and exit with a non-zero status."""
-    click.echo(f"Section '{section}' not found or empty", err=True)
+    safe_console.echo(f"Section '{section}' not found or empty", err=True)
     raise SystemExit(1)
 
 
@@ -43,22 +43,22 @@ def _format_toml_value(value: Any) -> str:
 
 def _echo_toml_section(name: str, section_data: dict[str, Any]) -> None:
     """Echo one `[name]` section header followed by its key = value lines."""
-    click.echo(f"\n[{name}]")
+    safe_console.echo(f"\n[{name}]")
     for key, value in section_data.items():
-        click.echo(f"  {key} = {_format_toml_value(value)}")
+        safe_console.echo(f"  {key} = {_format_toml_value(value)}")
 
 
 def _display_json(config: Config, section: str | None) -> None:
     """Display the config (or one section of it) as JSON."""
     if section is None:
         # Use lib_layered_config's built-in to_json method
-        click.echo(config.to_json(indent=2))
+        safe_console.echo(config.to_json(indent=2))
         return
 
     section_data = config.get(section, default={})
     if not section_data:
         _exit_section_not_found(section)
-    click.echo(orjson.dumps({section: section_data}, option=orjson.OPT_INDENT_2).decode())
+    safe_console.echo(orjson.dumps({section: section_data}, option=orjson.OPT_INDENT_2).decode())
 
 
 def _display_human(config: Config, section: str | None) -> None:
@@ -76,8 +76,8 @@ def _display_human(config: Config, section: str | None) -> None:
         if isinstance(section_data, dict):
             _echo_toml_section(section_name, cast("dict[str, Any]", section_data))
         else:
-            click.echo(f"\n[{section_name}]")
-            click.echo(f"  {section_data}")
+            safe_console.echo(f"\n[{section_name}]")
+            safe_console.echo(f"  {section_data}")
 
 
 def display_config(
@@ -101,7 +101,7 @@ def display_config(
             displays all configuration.
 
     Side Effects:
-        Writes formatted configuration to stdout via click.echo().
+        Writes formatted configuration to stdout via safe_console.echo().
         Raises SystemExit(1) if requested section doesn't exist.
 
     Note:

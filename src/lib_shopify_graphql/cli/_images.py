@@ -17,6 +17,7 @@ import lib_log_rich.runtime
 import orjson
 import rich_click as click
 
+from .. import safe_console
 from ..enums import OutputFormat
 from ..exceptions import AuthenticationError, GraphQLError, ProductNotFoundError
 from ..models import ImageReorderResult, ImageSource, ImageUpdate
@@ -69,11 +70,11 @@ def _create_images_from_sources(
 def _output_add_image_results(results: list[dict[str, str]], output_format: OutputFormat) -> None:
     """Output image creation results."""
     if output_format == OutputFormat.JSON:
-        click.echo(orjson.dumps({"images": results}, option=orjson.OPT_INDENT_2).decode())
+        safe_console.echo(orjson.dumps({"images": results}, option=orjson.OPT_INDENT_2).decode())
     else:
-        click.echo(f"\n✓ Added {len(results)} image(s)")
+        safe_console.echo(f"\n✓ Added {len(results)} image(s)")
         for img_result in results:
-            click.echo(f"  - {img_result['source']}: {img_result['image_id']} ({img_result['status']})")
+            safe_console.echo(f"  - {img_result['source']}: {img_result['image_id']} ({img_result['status']})")
 
 
 def _parse_image_ids(order: str) -> list[str]:
@@ -85,11 +86,11 @@ def _output_reorder_result(result: ImageReorderResult, output_format: OutputForm
     """Output reorder result in requested format."""
     if output_format == OutputFormat.JSON:
         data = {"product_id": result.product_id, "job_id": result.job_id}
-        click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
+        safe_console.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
     else:
-        click.echo(f"✓ Images reordered for product {result.product_id}")
+        safe_console.echo(f"✓ Images reordered for product {result.product_id}")
         if result.job_id:
-            click.echo(f"  Job ID: {result.job_id} (async operation)")
+            safe_console.echo(f"  Job ID: {result.job_id} (async operation)")
 
 
 # =============================================================================
@@ -136,7 +137,7 @@ def register_image_commands(
     ) -> None:
         """Add image(s) to a product from URL or local file."""
         if not urls and not files:
-            click.echo("Error: At least one --url or --file is required", err=True)
+            safe_console.echo("Error: At least one --url or --file is required", err=True)
             raise SystemExit(1)
 
         config, effective_profile = get_effective_config_and_profile(ctx, profile)
@@ -153,11 +154,11 @@ def register_image_commands(
                     logger.info("Images added: %s image(s)", len(results))
                     _output_add_image_results(results, output_format)
             except ProductNotFoundError:
-                click.echo(f"Product not found: {product_id}", err=True)
+                safe_console.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
     @cli_group.command("delete-image", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -214,16 +215,16 @@ def register_image_commands(
                             "deleted_image_ids": result.deleted_image_ids,
                             "deleted_media_ids": result.deleted_media_ids,
                         }
-                        click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
+                        safe_console.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
                     else:
-                        click.echo(f"✓ Image deleted from product {result.product_id}")
+                        safe_console.echo(f"✓ Image deleted from product {result.product_id}")
 
             except ProductNotFoundError:
-                click.echo(f"Product not found: {product_id}", err=True)
+                safe_console.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
     @cli_group.command("update-image", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -282,17 +283,17 @@ def register_image_commands(
                             "alt_text": result.alt_text,
                             "status": result.status,
                         }
-                        click.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
+                        safe_console.echo(orjson.dumps(data, option=orjson.OPT_INDENT_2).decode())
                     else:
-                        click.echo(f"✓ Image updated: {result.image_id}")
-                        click.echo(f"  Alt text: {result.alt_text}")
+                        safe_console.echo(f"✓ Image updated: {result.image_id}")
+                        safe_console.echo(f"  Alt text: {result.alt_text}")
 
             except ProductNotFoundError:
-                click.echo(f"Product not found: {product_id}", err=True)
+                safe_console.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
     @cli_group.command("reorder-images", context_settings=CLICK_CONTEXT_SETTINGS)
@@ -317,7 +318,7 @@ def register_image_commands(
         """Reorder product images."""
         image_ids = _parse_image_ids(order)
         if len(image_ids) < _MIN_IMAGES_FOR_REORDER:
-            click.echo("Error: At least 2 image IDs required for reordering", err=True)
+            safe_console.echo("Error: At least 2 image IDs required for reordering", err=True)
             raise SystemExit(1)
 
         config, effective_profile = get_effective_config_and_profile(ctx, profile)
@@ -334,11 +335,11 @@ def register_image_commands(
                     logger.info("Images reordered for product '%s' (job_id='%s')", result.product_id, result.job_id)
                     _output_reorder_result(result, output_format)
             except ProductNotFoundError:
-                click.echo(f"Product not found: {product_id}", err=True)
+                safe_console.echo(f"Product not found: {product_id}", err=True)
                 raise SystemExit(1) from None
             except (AuthenticationError, GraphQLError) as exc:
-                click.echo(f"Error: {exc}", err=True)
-                click.echo(get_fix_suggestion(exc, credentials), err=True)
+                safe_console.echo(f"Error: {exc}", err=True)
+                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
                 raise SystemExit(1) from exc
 
 

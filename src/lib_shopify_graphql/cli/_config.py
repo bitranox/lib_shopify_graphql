@@ -13,6 +13,7 @@ from typing import TYPE_CHECKING, NoReturn
 import lib_log_rich.runtime
 import rich_click as click
 
+from .. import safe_console
 from ..config_deploy import deploy_configuration
 from ..config_show import display_config
 from ..enums import DeployTarget, OutputFormat
@@ -39,26 +40,26 @@ def _report_deployment_result(deployed_paths: list[Path], effective_profile: str
     """Report deployment result to user."""
     if deployed_paths:
         profile_msg = f" (profile: {effective_profile})" if effective_profile else ""
-        click.echo(f"\nConfiguration deployed successfully{profile_msg}:")
+        safe_console.echo(f"\nConfiguration deployed successfully{profile_msg}:")
         for path in deployed_paths:
-            click.echo(f"  ✓ {path}")
+            safe_console.echo(f"  ✓ {path}")
     else:
-        click.echo("\nNo files were created (all target files already exist).")
-        click.echo("Use --force to overwrite existing configuration files.")
+        safe_console.echo("\nNo files were created (all target files already exist).")
+        safe_console.echo("Use --force to overwrite existing configuration files.")
 
 
 def _handle_deploy_permission_error(exc: PermissionError) -> NoReturn:
     """Handle permission error during deployment."""
     logger.error("Permission denied when deploying configuration", extra={"error": str(exc)})
-    click.echo(f"\nError: Permission denied. {exc}", err=True)
-    click.echo("Hint: System-wide deployment (--target app/host) may require sudo.", err=True)
+    safe_console.echo(f"\nError: Permission denied. {exc}", err=True)
+    safe_console.echo("Hint: System-wide deployment (--target app/host) may require sudo.", err=True)
     raise SystemExit(1)
 
 
 def _handle_deploy_error(exc: Exception) -> NoReturn:
     """Handle generic error during deployment."""
     logger.error("Failed to deploy configuration", extra={"error": str(exc), "error_type": type(exc).__name__})
-    click.echo(f"\nError: Failed to deploy configuration: {exc}", err=True)
+    safe_console.echo(f"\nError: Failed to deploy configuration: {exc}", err=True)
     raise SystemExit(1)
 
 
