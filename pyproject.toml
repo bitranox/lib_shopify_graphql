@@ -1,6 +1,6 @@
 [project]
 name = "lib_shopify_graphql"
-version = "2.0.8"
+version = "2.0.9"
 description = "Python library for Shopify GraphQL API interactions"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -15,7 +15,7 @@ dependencies = [
     # not stick - the next `make test` puts it back.
     "click>=8.4.2",
     "lib_cli_exit_tools>=2.3.4",
-    "lib_log_rich>=6.3.6",
+    "lib_log_rich>=6.3.7",
     "lib_layered_config>=5.6.2",
     "filelock>=3.32.2",
     "orjson>=3.11.9",
