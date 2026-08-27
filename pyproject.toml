@@ -13,13 +13,13 @@ dependencies = [
     # is higher than that and is not hand-chosen: bmk's `deps update` stage runs inside
     # `make test` and rewrites every floor to the current release, so lowering it by hand does
     # not stick - the next `make test` puts it back.
-    "click>=8.4.2",
+    "click>=8.5.0",
     "lib_cli_exit_tools>=2.3.4",
     "lib_log_rich>=6.3.7",
     "lib_layered_config>=5.6.2",
-    "filelock>=3.32.2",
-    "orjson>=3.11.9",
-    "httpx2>=2.9.1",
+    "filelock>=3.32.4",
+    "orjson>=3.12.0",
+    "httpx2>=2.12.0",
     "pydantic>=2.13.4",
 ]
 license = { text = "MIT" }
@@ -56,7 +56,7 @@ Issues = "https://github.com/bitranox/lib_shopify_graphql/issues"
 dev = [
   "pytest>=9.1.1",
   "pytest-cov>=7.1.0",
-  "ruff>=0.16.1",
+  "ruff>=0.16.5",
   "pyright[nodejs]>=1.1.411",
   "bandit>=1.9.4",
   # 1.5.1 was yanked upstream (unintended breaking changes), so 1.5.0 is the newest usable
@@ -84,7 +84,7 @@ lib_shopify_graphql = "lib_shopify_graphql.cli:main"
 lib-shopify-graphql = "lib_shopify_graphql.cli:main"
 
 [build-system]
-requires = ["hatchling>=1.31.0"]
+requires = ["hatchling>=1.32.0"]
 build-backend = "hatchling.build"
 
 
