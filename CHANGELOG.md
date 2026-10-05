@@ -12,7 +12,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - `python -m lib_shopify_graphql` now runs `cli.main()`, the function the console scripts run, instead of a separate session: a usage error or unknown command exits 2 (was 1) and traceback handling matches the console script.
 
 ### Changed
-- Raised dependency and dev tool floors to their current releases.
+- Raised dependency floors across major versions: lib_layered_config 7.0.1 (was 5.6.2), filelock 4.0.12 (was 3.32.4); the test suite passes against them. Also raised the remaining dependency and dev tool floors.
 
 ## [2.0.8] - 2026-07-24
 
