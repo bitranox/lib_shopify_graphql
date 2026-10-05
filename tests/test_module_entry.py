@@ -7,12 +7,12 @@ verification instead of mocking.
 
 from __future__ import annotations
 
+import importlib
 import os
 import runpy
 import subprocess
 import sys
 
-import lib_cli_exit_tools
 import pytest
 
 from lib_shopify_graphql import __init__conf__
@@ -90,17 +90,26 @@ class TestModuleEntrySubprocess:
         assert "{" in result.stdout
 
     def test_module_unknown_command_fails(self) -> None:
-        """When `python -m` runs unknown command, it fails."""
+        """When `python -m` runs unknown command, it exits 2 like the console script."""
         result = _run_module_subprocess(
             [sys.executable, "-m", "lib_shopify_graphql", "unknown_cmd"],
         )
 
-        assert result.returncode != 0
+        assert result.returncode == 2
 
 
 # =============================================================================
 # Module Entry via runpy - Real Behavior
 # =============================================================================
+
+
+def _run_entry(monkeypatch: pytest.MonkeyPatch, argv: list[str]) -> int:
+    """Run the module entry in-process and return the exit code it raises."""
+    monkeypatch.setattr(sys, "argv", ["lib_shopify_graphql", *argv])
+    with pytest.raises(SystemExit) as exc:
+        runpy.run_module("lib_shopify_graphql.__main__", run_name="__main__")
+    assert isinstance(exc.value.code, int)
+    return exc.value.code
 
 
 @pytest.mark.os_agnostic
@@ -110,19 +119,59 @@ class TestModuleEntryRunpy:
     def test_info_command_succeeds(
         self,
         monkeypatch: pytest.MonkeyPatch,
+        isolated_traceback_config: None,
         capsys: pytest.CaptureFixture[str],
     ) -> None:
         """When info command runs via runpy, it succeeds."""
-        monkeypatch.setattr(sys, "argv", ["check_zpool_status", "info"])
-        monkeypatch.setattr(lib_cli_exit_tools.config, "traceback", False, raising=False)
-        monkeypatch.setattr(lib_cli_exit_tools.config, "traceback_force_color", False, raising=False)
+        assert _run_entry(monkeypatch, ["info"]) == 0
+        assert __init__conf__.name in capsys.readouterr().out
 
-        with pytest.raises(SystemExit) as exc:
-            runpy.run_module("lib_shopify_graphql.__main__", run_name="__main__")
+    @pytest.mark.parametrize(
+        "argv",
+        [["--bad-flag"], ["unknown_cmd"], ["info", "--bad-flag"], ["--help"]],
+        ids=["bad-flag", "unknown-command", "bad-subcommand-flag", "help"],
+    )
+    def test_exit_code_matches_console_script(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        isolated_traceback_config: None,
+        argv: list[str],
+    ) -> None:
+        """When the module entry runs, it exits with the code cli.main() returns."""
+        script_code = cli_mod.main(argv)
 
-        assert exc.value.code == 0
-        captured = capsys.readouterr()
-        assert __init__conf__.name in captured.out
+        assert _run_entry(monkeypatch, argv) == script_code
+
+    def test_usage_error_exits_two(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        isolated_traceback_config: None,
+    ) -> None:
+        """When a usage error occurs, the module entry exits 2 like the console script."""
+        assert _run_entry(monkeypatch, ["--bad-flag"]) == 2
+
+    def test_traceback_flag_keeps_usage_error_code(
+        self,
+        monkeypatch: pytest.MonkeyPatch,
+        isolated_traceback_config: None,
+    ) -> None:
+        """When --traceback accompanies a usage error, the code still matches the console script."""
+        argv = ["--traceback", "unknown_cmd"]
+        script_code = cli_mod.main(argv)
+
+        assert _run_entry(monkeypatch, argv) == script_code
+
+    def test_importing_the_module_runs_nothing(self) -> None:
+        """When the module is imported (not run), it executes no command."""
+        previous = sys.modules.pop("lib_shopify_graphql.__main__", None)
+        try:
+            module = importlib.import_module("lib_shopify_graphql.__main__")
+
+            assert module.cli is cli_mod
+        finally:
+            sys.modules.pop("lib_shopify_graphql.__main__", None)
+            if previous is not None:
+                sys.modules["lib_shopify_graphql.__main__"] = previous
 
 
 # =============================================================================

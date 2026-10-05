@@ -4,6 +4,16 @@ All notable changes to this project will be documented in this file following
 the [Keep a Changelog](https://keepachangelog.com/) format.
 
 
+## [Unreleased]
+
+## [2.0.10] 2026-10-05 20:05:32
+
+### Fixed
+- `python -m lib_shopify_graphql` now runs `cli.main()`, the function the console scripts run, instead of a separate session: a usage error or unknown command exits 2 (was 1) and traceback handling matches the console script.
+
+### Changed
+- Raised dependency and dev tool floors to their current releases.
+
 ## [2.0.8] - 2026-07-24
 
 ### Fixed
