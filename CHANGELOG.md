@@ -6,6 +6,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [2.1.0] 2026-10-12 19:06:46
+
 ### Fixed
 - **The cache factory validates its config sections at the boundary.** A digit-only
   `SHOPIFY__MYSQL__PASSWORD`, user, database or host, a digit-only cache `json_path` and a

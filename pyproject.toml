@@ -1,6 +1,6 @@
 [project]
 name = "lib_shopify_graphql"
-version = "2.0.10"
+version = "2.1.0"
 description = "Python library for Shopify GraphQL API interactions"
 readme = "README.md"
 requires-python = ">=3.10"
@@ -306,3 +306,7 @@ ignore-vulns = [
   # uv: developer tool (package manager), not a runtime dep
   "GHSA-4gg8-gxpx-9rph",  # uv 0.11.7 entry-point path traversal on install, fix in 0.11.15 — env-only
 ]
+
+[tool.uv]
+exclude-newer = "1 day"
+exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false, pydantic = "2026-10-11T18:37:56Z", pydantic-core = "2026-10-11T18:35:45Z", rtoml = "2026-10-12T00:17:16Z"}
