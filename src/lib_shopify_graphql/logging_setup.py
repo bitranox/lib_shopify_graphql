@@ -49,6 +49,12 @@ def _build_runtime_config(config: Config) -> lib_log_rich.runtime.RuntimeConfig:
     log_config_raw: Any = config.get("lib_log_rich", default={})
     log_config: dict[str, Any] = dict(log_config_raw) if log_config_raw else {}
 
+    # lib_layered_config reads an unquoted all-digit value as an int, and RuntimeConfig refuses an int
+    # for these text fields. The conversion is lossless, so turning it back restores what was written.
+    for key in ("service", "environment"):
+        if isinstance(log_config.get(key), int):
+            log_config[key] = str(log_config[key])
+
     # Apply defaults for required fields
     if "service" not in log_config:
         log_config["service"] = __init__conf__.name

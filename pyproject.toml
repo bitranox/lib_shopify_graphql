@@ -14,13 +14,13 @@ dependencies = [
     # `make test` and rewrites every floor to the current release, so lowering it by hand does
     # not stick - the next `make test` puts it back.
     "click>=8.5.0",
-    "lib_cli_exit_tools>=2.3.4",
-    "lib_log_rich>=6.3.8",
-    "lib_layered_config>=7.0.1",
-    "filelock>=4.0.12",
-    "orjson>=3.12.0",
+    "lib_cli_exit_tools>=2.4.0",
+    "lib_log_rich>=6.5.1",
+    "lib_layered_config>=7.1.6",
+    "filelock>=4.1.0",
+    "orjson>=3.13.0",
     "httpx2>=2.13.1",
-    "pydantic>=2.13.5",
+    "pydantic>=2.14.1",
 ]
 license = { text = "MIT" }
 authors = [{ name = "bitranox", email = "bitranox@gmail.com" }]
@@ -56,7 +56,7 @@ Issues = "https://github.com/bitranox/lib_shopify_graphql/issues"
 dev = [
   "pytest>=9.1.1",
   "pytest-cov>=7.1.0",
-  "ruff>=0.16.10",
+  "ruff>=0.17.0",
   "pyright[nodejs]>=1.1.414",
   "bandit>=1.9.4",
   # 1.5.1 was yanked upstream (unintended breaking changes), so 1.5.0 is the newest usable
@@ -73,7 +73,7 @@ dev = [
   "pip-audit>=2.10.1",
   "textual>=8.2.8",
   "import-linter>=2.15",
-  "rtoml>=0.13.0",
+  "rtoml>=0.14.0",
 ]
 mysql = [
   "pymysql>=1.2.3",

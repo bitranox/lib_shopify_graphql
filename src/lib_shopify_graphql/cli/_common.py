@@ -58,7 +58,9 @@ class TokenCacheConfig(BaseModel):
     from lib_layered_config.
     """
 
-    model_config = ConfigDict(extra="ignore")
+    # lib_layered_config reads an unquoted all-digit value as an int, and a str field refuses an int.
+    # The conversion is lossless, so turning it back into text restores what the operator wrote.
+    model_config = ConfigDict(extra="ignore", coerce_numbers_to_str=True)
 
     enabled: bool = False
     backend: str = "json"
@@ -74,7 +76,9 @@ class SKUCacheConfig(BaseModel):
     from lib_layered_config.
     """
 
-    model_config = ConfigDict(extra="ignore")
+    # lib_layered_config reads an unquoted all-digit value as an int, and a str field refuses an int.
+    # The conversion is lossless, so turning it back into text restores what the operator wrote.
+    model_config = ConfigDict(extra="ignore", coerce_numbers_to_str=True)
 
     enabled: bool = True
     backend: str = "json"
@@ -90,7 +94,9 @@ class MySQLConfig(BaseModel):
     Used when individual MySQL parameters are preferred over a connection string.
     """
 
-    model_config = ConfigDict(extra="ignore")
+    # lib_layered_config reads an unquoted all-digit value as an int, and a str field refuses an int.
+    # The conversion is lossless, so turning it back into text restores what the operator wrote.
+    model_config = ConfigDict(extra="ignore", coerce_numbers_to_str=True)
 
     # Connection string (takes precedence if set)
     connection: str = ""

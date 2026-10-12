@@ -6,6 +6,16 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+### Fixed
+- **A digit-only `.env` value no longer stops the program.** lib_layered_config 7.1 reads an
+  unquoted `.env` or environment value that spells a number losslessly as an int, so
+  `SHOPIFY__MYSQL__PASSWORD=123456` or `SHOPIFY__CLIENT_ID=424242` reached a text setting as a
+  number and was refused with `Input should be a valid string`. `ShopifyCredentials`,
+  `TokenCacheConfig`, `SKUCacheConfig` and `MySQLConfig` now turn such a number back into the
+  text the operator wrote, and the logging setup does the same for `LIB_LOG_RICH__SERVICE` and
+  `LIB_LOG_RICH__ENVIRONMENT`. Numeric settings still read as numbers and a non-numeric value
+  for one is still refused.
+
 ## [2.0.10] 2026-10-05 20:05:32
 
 ### Fixed
