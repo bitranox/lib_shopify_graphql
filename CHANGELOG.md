@@ -7,6 +7,12 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 ## [Unreleased]
 
 ### Fixed
+- **The cache factory validates its config sections at the boundary.** A digit-only
+  `SHOPIFY__MYSQL__PASSWORD`, user, database or host, a digit-only cache `json_path` and a
+  digit-only `mysql_table` were read from the raw config mapping and handed to the MySQL and JSON
+  cache adapters as ints. The factory now validates the cache and `[shopify.mysql]` sections with
+  the typed config models, which moved to `lib_shopify_graphql.cache_config` (still importable from
+  `lib_shopify_graphql.cli`), and builds the adapter from one pure, connection-free spec.
 - **A digit-only `.env` value no longer stops the program.** lib_layered_config 7.1 reads an
   unquoted `.env` or environment value that spells a number losslessly as an int, so
   `SHOPIFY__MYSQL__PASSWORD=123456` or `SHOPIFY__CLIENT_ID=424242` reached a text setting as a

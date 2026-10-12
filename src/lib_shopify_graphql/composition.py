@@ -31,6 +31,7 @@ Usage:
 from __future__ import annotations
 
 import logging
+from dataclasses import dataclass
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, TypedDict
 
@@ -52,9 +53,10 @@ from .adapters.constants import (
     DEFAULT_SKU_CACHE_TTL_SECONDS,
     DEFAULT_TOKEN_REFRESH_MARGIN_SECONDS,
 )
+from .cache_config import CacheBackendConfig, MySQLConfig
 
 if TYPE_CHECKING:
-    from collections.abc import Callable
+    from collections.abc import Callable, Mapping
 
     from .application.ports import (
         CachePort,
@@ -257,6 +259,85 @@ _default_token_provider: TokenProviderPort | None = None
 _token_provider_checked: bool = False
 
 
+@dataclass(frozen=True, slots=True)
+class _MySQLCacheSpec:
+    """Everything the MySQL cache adapter is built from, already validated and typed.
+
+    ``connection`` is non-empty when a URL was configured; the individual fields are used otherwise.
+    """
+
+    table_name: str
+    connect_timeout: int
+    auto_create_database: bool
+    connection: str
+    host: str
+    port: int
+    user: str
+    password: str
+    database: str
+
+
+def _mysql_cache_spec(
+    cache_section: Mapping[str, Any],
+    mysql_section: Mapping[str, Any],
+    *,
+    default_table: str,
+) -> _MySQLCacheSpec | None:
+    """Validate the cache and shared MySQL sections and decide how to connect.
+
+    Priority: per-cache connection URL, then the shared URL, then the individual parameters.
+    The sections are checked here, at the boundary, so a digit-only password or user that
+    lib_layered_config delivered as an int reaches the adapter as text.
+
+    Args:
+        cache_section: The ``[shopify.sku_cache]`` or ``[shopify.token_cache]`` section.
+        mysql_section: The shared ``[shopify.mysql]`` section.
+        default_table: Table name used when the cache section names none.
+
+    Returns:
+        The connection spec, or None when neither a URL nor user plus database is configured.
+
+    Raises:
+        pydantic.ValidationError: A section holds a value of the wrong type.
+    """
+    cache = CacheBackendConfig.model_validate({"mysql_table": default_table, **cache_section})
+    mysql = MySQLConfig.model_validate(mysql_section)
+    connection = cache.mysql_connection or mysql.connection
+    if not connection and not (mysql.user and mysql.database):
+        return None
+    return _MySQLCacheSpec(
+        table_name=cache.mysql_table,
+        connect_timeout=mysql.connect_timeout,
+        auto_create_database=mysql.auto_create_database,
+        connection=connection,
+        host=mysql.host,
+        port=mysql.port,
+        user=mysql.user,
+        password=mysql.password,
+        database=mysql.database,
+    )
+
+
+def _mysql_cache_from_spec(spec: _MySQLCacheSpec) -> MySQLCacheAdapter:
+    if spec.connection:
+        return MySQLCacheAdapter.from_url(
+            spec.connection,
+            table_name=spec.table_name,
+            connect_timeout=spec.connect_timeout,
+            auto_create_database=spec.auto_create_database,
+        )
+    return MySQLCacheAdapter(
+        host=spec.host,
+        port=spec.port,
+        user=spec.user,
+        password=spec.password,
+        database=spec.database,
+        table_name=spec.table_name,
+        connect_timeout=spec.connect_timeout,
+        auto_create_database=spec.auto_create_database,
+    )
+
+
 def _create_cache_from_config(
     config: dict[str, Any],
     default_path_func: Callable[[], Path],
@@ -279,7 +360,7 @@ def _create_cache_from_config(
     backend = config.get("backend", "json")
 
     if backend == "json":
-        json_path = config.get("json_path")
+        json_path = CacheBackendConfig.model_validate(config).json_path
         cache_path = Path(json_path) if json_path else default_path_func()
         cache_path.parent.mkdir(parents=True, exist_ok=True)
         return JsonFileCacheAdapter(cache_path)
@@ -289,36 +370,9 @@ def _create_cache_from_config(
             logger.warning("MySQL backend requested but pymysql not installed")
             return None
 
-        mysql_cfg = mysql_config or {}
-        table = config.get("mysql_table", default_table)
-        connect_timeout = mysql_cfg.get("connect_timeout", 10)
-        auto_create_database = mysql_cfg.get("auto_create_database", True)
-
-        # Priority: per-cache connection > shared connection > individual params
-        connection = config.get("mysql_connection") or mysql_cfg.get("connection")
-
-        if connection:
-            return MySQLCacheAdapter.from_url(
-                connection,
-                table_name=table,
-                connect_timeout=connect_timeout,
-                auto_create_database=auto_create_database,
-            )
-
-        # Check if individual parameters are configured
-        user = mysql_cfg.get("user")
-        database = mysql_cfg.get("database")
-        if user and database:
-            return MySQLCacheAdapter(
-                host=mysql_cfg.get("host", "localhost"),
-                port=mysql_cfg.get("port", 3306),
-                user=user,
-                password=mysql_cfg.get("password", ""),
-                database=database,
-                table_name=table,
-                connect_timeout=connect_timeout,
-                auto_create_database=auto_create_database,
-            )
+        spec = _mysql_cache_spec(config, mysql_config or {}, default_table=default_table)
+        if spec is not None:
+            return _mysql_cache_from_spec(spec)
 
         logger.warning(
             "MySQL backend requested for %s but not configured. Set shopify.mysql.connection or shopify.mysql.user + shopify.mysql.database", cache_type

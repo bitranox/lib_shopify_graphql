@@ -18,7 +18,6 @@ from typing import TYPE_CHECKING, Final, NoReturn, TypeVar
 
 import lib_cli_exit_tools
 import rich_click as click
-from pydantic import BaseModel, ConfigDict
 
 if TYPE_CHECKING:
     from collections.abc import Generator, Sequence
@@ -29,6 +28,7 @@ if TYPE_CHECKING:
     from ..shopify_client import ShopifySession
 
 from .. import __init__conf__, safe_console
+from ..cache_config import MySQLConfig, SKUCacheConfig, TokenCacheConfig
 from ..config import get_config
 
 E = TypeVar("E", bound=Enum)
@@ -49,69 +49,9 @@ TRACEBACK_VERBOSE_LIMIT: Final[int] = 10_000
 # =============================================================================
 # Typed Configuration Models
 # =============================================================================
-
-
-class TokenCacheConfig(BaseModel):
-    """Typed configuration for token cache settings.
-
-    Validates and provides typed access to token cache configuration
-    from lib_layered_config.
-    """
-
-    # lib_layered_config reads an unquoted all-digit value as an int, and a str field refuses an int.
-    # The conversion is lossless, so turning it back into text restores what the operator wrote.
-    model_config = ConfigDict(extra="ignore", coerce_numbers_to_str=True)
-
-    enabled: bool = False
-    backend: str = "json"
-    json_path: str = ""
-    mysql_connection: str = ""
-    mysql_table: str = "token_cache"
-
-
-class SKUCacheConfig(BaseModel):
-    """Typed configuration for SKU cache settings.
-
-    Validates and provides typed access to SKU cache configuration
-    from lib_layered_config.
-    """
-
-    # lib_layered_config reads an unquoted all-digit value as an int, and a str field refuses an int.
-    # The conversion is lossless, so turning it back into text restores what the operator wrote.
-    model_config = ConfigDict(extra="ignore", coerce_numbers_to_str=True)
-
-    enabled: bool = True
-    backend: str = "json"
-    json_path: str = ""
-    mysql_connection: str = ""
-    mysql_table: str = "sku_cache"
-
-
-class MySQLConfig(BaseModel):
-    """Typed configuration for shared MySQL settings.
-
-    Validates and provides typed access to [shopify.mysql] configuration.
-    Used when individual MySQL parameters are preferred over a connection string.
-    """
-
-    # lib_layered_config reads an unquoted all-digit value as an int, and a str field refuses an int.
-    # The conversion is lossless, so turning it back into text restores what the operator wrote.
-    model_config = ConfigDict(extra="ignore", coerce_numbers_to_str=True)
-
-    # Connection string (takes precedence if set)
-    connection: str = ""
-
-    # Individual parameters (used when connection is empty)
-    host: str = "localhost"
-    port: int = 3306
-    user: str = ""
-    password: str = ""
-    database: str = ""
-
-    # Common settings
-    auto_create_database: bool = True
-    connect_timeout: int = 10
-
+#
+# TokenCacheConfig, SKUCacheConfig and MySQLConfig live in ``cache_config`` so the composition
+# root can validate its cache sections with them; they are re-exported here for the CLI.
 
 # =============================================================================
 # Click Parameter Types

@@ -17,9 +17,14 @@ from typing import TYPE_CHECKING
 import pytest
 from pydantic import BaseModel, ValidationError
 
+from lib_shopify_graphql.adapters import JsonFileCacheAdapter
 from lib_shopify_graphql.cli._common import MySQLConfig, SKUCacheConfig, TokenCacheConfig
 from lib_shopify_graphql.cli._health import (
     extract_shopify_credentials_from_config,
+)
+from lib_shopify_graphql.composition import (
+    _create_sku_cache_from_config,  # pyright: ignore[reportPrivateUsage]
+    _mysql_cache_spec,  # pyright: ignore[reportPrivateUsage]
 )
 from lib_shopify_graphql.config import get_config
 from lib_shopify_graphql.logging_setup import (
@@ -115,3 +120,51 @@ def test_a_non_numeric_value_for_a_numeric_setting_is_still_refused(tmp_path: Pa
 
     with pytest.raises(ValidationError):
         MySQLConfig.model_validate(config.get("shopify.mysql", {}))
+
+
+@pytest.mark.os_agnostic
+def test_digit_only_cache_json_path_builds_the_json_cache_at_that_text_path(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    config = _load_dotenv(tmp_path, "SHOPIFY__SKU_CACHE__JSON_PATH=424242")
+    sku_cache = config.get("shopify.sku_cache", {})
+    # Premise: the library hands the path over as a number.
+    assert isinstance(sku_cache["json_path"], int)
+    monkeypatch.chdir(tmp_path)
+
+    cache = _create_sku_cache_from_config(sku_cache)
+
+    assert isinstance(cache, JsonFileCacheAdapter)
+    assert (tmp_path / "424242").parent.exists()
+
+
+@pytest.mark.os_agnostic
+def test_digit_only_mysql_settings_reach_the_adapter_arguments_as_their_text(tmp_path: Path) -> None:
+    config = _load_dotenv(
+        tmp_path,
+        "SHOPIFY__MYSQL__USER=4711",
+        "SHOPIFY__MYSQL__PASSWORD=123456",
+        "SHOPIFY__MYSQL__DATABASE=2026",
+        "SHOPIFY__MYSQL__HOST=10",
+        "SHOPIFY__SKU_CACHE__MYSQL_TABLE=99",
+    )
+    mysql = config.get("shopify.mysql", {})
+    # Premise: the library hands every one of them over as a number.
+    assert all(isinstance(mysql[key], int) for key in ("user", "password", "database", "host"))
+
+    spec = _mysql_cache_spec(config.get("shopify.sku_cache", {}), mysql, default_table="sku_cache")
+
+    assert spec is not None
+    assert (spec.user, spec.password, spec.database, spec.host, spec.table_name) == ("4711", "123456", "2026", "10", "99")
+    assert spec.connection == ""
+
+
+@pytest.mark.os_agnostic
+def test_a_shared_connection_url_wins_over_the_individual_mysql_settings() -> None:
+    spec = _mysql_cache_spec({}, {"connection": "mysql://u:p@h/d", "user": "x", "database": "y"}, default_table="sku_cache")
+
+    assert spec is not None
+    assert spec.connection == "mysql://u:p@h/d"
+
+
+@pytest.mark.os_agnostic
+def test_mysql_without_connection_or_user_and_database_is_not_configured() -> None:
+    assert _mysql_cache_spec({}, {"user": "x"}, default_table="sku_cache") is None
