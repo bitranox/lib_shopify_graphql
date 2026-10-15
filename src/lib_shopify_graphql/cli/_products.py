@@ -12,8 +12,9 @@ from __future__ import annotations
 
 import logging
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NoReturn
 
 import lib_log_rich.runtime
 import orjson
@@ -329,6 +330,256 @@ def _create_sku_resolver_for_delete(
 
 
 # =============================================================================
+# Command Runners
+# =============================================================================
+
+
+@dataclass(frozen=True, slots=True)
+class _ProductFieldOptions:
+    """The product field options shared by ``create-product`` and ``update-product``."""
+
+    title: str | None
+    vendor: str | None
+    product_type: str | None
+    status: ProductStatus | None
+    tags: str | None
+    description: str | None
+    handle: str | None
+    seo_title: str | None
+    seo_description: str | None
+
+    def to_create(self) -> ProductCreate:
+        """Build a ProductCreate from these options (exits 1 when the title is missing)."""
+        return _build_product_create_from_options(
+            title=self.title,
+            vendor=self.vendor,
+            product_type=self.product_type,
+            status=self.status,
+            tags=self.tags,
+            description=self.description,
+            handle=self.handle,
+            seo_title=self.seo_title,
+            seo_description=self.seo_description,
+        )
+
+    def to_update(self) -> ProductUpdate:
+        """Build a ProductUpdate setting only the options that were given."""
+        return _build_product_update_from_options(
+            title=self.title,
+            vendor=self.vendor,
+            product_type=self.product_type,
+            status=self.status,
+            tags=self.tags,
+            description=self.description,
+            handle=self.handle,
+            seo_title=self.seo_title,
+            seo_description=self.seo_description,
+        )
+
+
+def _resolve_product_create(json_input: str | None, fields: _ProductFieldOptions) -> ProductCreate:
+    """Build the ProductCreate from --json when given, otherwise from the field options."""
+    if json_input:
+        product_create = _parse_product_create_json(json_input)
+        logger.info("Creating product from JSON: title='%s'", product_create.title)
+        return product_create
+    product_create = fields.to_create()
+    logger.info("Creating product: title='%s'", product_create.title)
+    return product_create
+
+
+def _resolve_product_update(product_id: str, json_input: str | None, fields: _ProductFieldOptions) -> ProductUpdate:
+    """Build the ProductUpdate from --json when given, otherwise from the field options."""
+    if json_input:
+        product_update = _parse_product_update_json(json_input)
+        logger.info("Updating product '%s' from JSON", product_id)
+        return product_update
+    product_update = fields.to_update()
+    logger.info("Updating product '%s'", product_id)
+    return product_update
+
+
+def _exit_on_shopify_error(exc: Exception, credentials: Any, get_fix_suggestion: Any) -> NoReturn:
+    """Report an authentication or GraphQL error with its fix suggestion and exit 1."""
+    safe_console.echo(f"Error: {exc}", err=True)
+    safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
+    raise SystemExit(1) from exc
+
+
+def _exit_not_found(message: str) -> NoReturn:
+    """Report a missing product and exit 1 without chaining the lookup error."""
+    safe_console.echo(message, err=True)
+    raise SystemExit(1) from None
+
+
+def _run_get_product(
+    ctx: click.Context,
+    *,
+    product_id: str,
+    output_format: OutputFormat,
+    profile: str | None,
+    get_credentials_or_exit: Any,
+    get_fix_suggestion: Any,
+) -> None:
+    """Fetch and print a product (body of ``get-product``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "get-product", "profile": effective_profile, "product_id": product_id}
+
+    with lib_log_rich.runtime.bind(job_id="cli-get-product", extra=extra):
+        logger.info("Fetching product '%s'", product_id)
+
+        credentials = get_credentials_or_exit(config)
+
+        try:
+            with shopify_session(credentials) as session:
+                product = get_product_by_id(session, product_id)
+                _output_product(product, output_format)
+        except ProductNotFoundError:
+            _exit_not_found(f"Product not found: {product_id}")
+        except (AuthenticationError, GraphQLError) as exc:
+            _exit_on_shopify_error(exc, credentials, get_fix_suggestion)
+
+
+def _run_create_product(
+    ctx: click.Context,
+    *,
+    fields: _ProductFieldOptions,
+    json_input: str | None,
+    output_format: OutputFormat,
+    profile: str | None,
+    get_credentials_or_exit: Any,
+    get_fix_suggestion: Any,
+) -> None:
+    """Create a product and print it (body of ``create-product``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "create-product", "profile": effective_profile}
+
+    with lib_log_rich.runtime.bind(job_id="cli-create-product", extra=extra):
+        product_create = _resolve_product_create(json_input, fields)
+
+        credentials = get_credentials_or_exit(config)
+
+        try:
+            with shopify_session(credentials) as session:
+                product = create_product(session, product_create)
+                logger.info("Product created: id='%s'", product.id)
+                _output_product(product, output_format)
+        except (AuthenticationError, GraphQLError) as exc:
+            _exit_on_shopify_error(exc, credentials, get_fix_suggestion)
+
+
+def _run_duplicate_product(
+    ctx: click.Context,
+    *,
+    product_id: str,
+    new_title: str,
+    no_images: bool,
+    status: ProductStatus | None,
+    output_format: OutputFormat,
+    profile: str | None,
+    get_credentials_or_exit: Any,
+    get_fix_suggestion: Any,
+) -> None:
+    """Duplicate a product and print the copy (body of ``duplicate-product``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {
+        "command": "duplicate-product",
+        "profile": effective_profile,
+        "product_id": product_id,
+        "new_title": new_title,
+    }
+
+    with lib_log_rich.runtime.bind(job_id="cli-duplicate-product", extra=extra):
+        logger.info("Duplicating product '%s' with new title '%s'", product_id, new_title)
+
+        credentials = get_credentials_or_exit(config)
+
+        try:
+            with shopify_session(credentials) as session:
+                result = duplicate_product(
+                    session,
+                    product_id,
+                    new_title,
+                    include_images=not no_images,
+                    new_status=status,
+                )
+                logger.info("Product duplicated: original='%s', new='%s'", result.original_product_id, result.new_product.id)
+                _output_product(result.new_product, output_format)
+        except ProductNotFoundError:
+            _exit_not_found(f"Source product not found: {product_id}")
+        except (AuthenticationError, GraphQLError) as exc:
+            _exit_on_shopify_error(exc, credentials, get_fix_suggestion)
+
+
+def _run_delete_product(
+    ctx: click.Context,
+    *,
+    product_id: str,
+    force: bool,
+    output_format: OutputFormat,
+    profile: str | None,
+    get_credentials_or_exit: Any,
+    get_fix_suggestion: Any,
+    create_sku_cache_from_config: Any,
+) -> None:
+    """Delete a product after confirmation (body of ``delete-product``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "delete-product", "profile": effective_profile, "product_id": product_id}
+
+    with lib_log_rich.runtime.bind(job_id="cli-delete-product", extra=extra):
+        if not force and not _confirm_delete(product_id):
+            safe_console.echo("Aborted.")
+            raise SystemExit(0)
+
+        logger.info("Deleting product '%s'", product_id)
+
+        credentials = get_credentials_or_exit(config)
+
+        sku_resolver = _create_sku_resolver_for_delete(config, credentials, create_sku_cache_from_config)
+
+        try:
+            with shopify_session(credentials) as session:
+                result = delete_product(session, product_id, sku_resolver=sku_resolver)
+                logger.info("Product deleted: id='%s'", result.deleted_product_id)
+                _output_delete_result(result, output_format)
+        except ProductNotFoundError:
+            _exit_not_found(f"Product not found: {product_id}")
+        except (AuthenticationError, GraphQLError) as exc:
+            _exit_on_shopify_error(exc, credentials, get_fix_suggestion)
+
+
+def _run_update_product(
+    ctx: click.Context,
+    *,
+    product_id: str,
+    fields: _ProductFieldOptions,
+    json_input: str | None,
+    output_format: OutputFormat,
+    profile: str | None,
+    get_credentials_or_exit: Any,
+    get_fix_suggestion: Any,
+) -> None:
+    """Apply a partial product update and print the result (body of ``update-product``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "update-product", "profile": effective_profile, "product_id": product_id}
+
+    with lib_log_rich.runtime.bind(job_id="cli-update-product", extra=extra):
+        product_update = _resolve_product_update(product_id, json_input, fields)
+
+        credentials = get_credentials_or_exit(config)
+
+        try:
+            with shopify_session(credentials) as session:
+                product = update_product(session, product_id, product_update)
+                logger.info("Product updated: id='%s'", product.id)
+                _output_product(product, output_format)
+        except ProductNotFoundError:
+            _exit_not_found(f"Product not found: {product_id}")
+        except (AuthenticationError, GraphQLError) as exc:
+            _exit_on_shopify_error(exc, credentials, get_fix_suggestion)
+
+
+# =============================================================================
 # CLI Commands
 # =============================================================================
 
@@ -381,25 +632,14 @@ def register_product_commands(
 
             lib-shopify-graphql get-product gid://shopify/Product/123456789 --format human
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "get-product", "profile": effective_profile, "product_id": product_id}
-
-        with lib_log_rich.runtime.bind(job_id="cli-get-product", extra=extra):
-            logger.info("Fetching product '%s'", product_id)
-
-            credentials = get_credentials_or_exit(config)
-
-            try:
-                with shopify_session(credentials) as session:
-                    product = get_product_by_id(session, product_id)
-                    _output_product(product, output_format)
-            except ProductNotFoundError:
-                safe_console.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1) from None
-            except (AuthenticationError, GraphQLError) as exc:
-                safe_console.echo(f"Error: {exc}", err=True)
-                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1) from exc
+        _run_get_product(
+            ctx,
+            product_id=product_id,
+            output_format=output_format,
+            profile=profile,
+            get_credentials_or_exit=get_credentials_or_exit,
+            get_fix_suggestion=get_fix_suggestion,
+        )
 
     @cli_group.command("create-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @option("--title", type=str, default=None, help="Product title (required if no --json)")
@@ -461,39 +701,26 @@ def register_product_commands(
 
             lib-shopify-graphql create-product --json product.json
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "create-product", "profile": effective_profile}
-
-        with lib_log_rich.runtime.bind(job_id="cli-create-product", extra=extra):
-            # Build ProductCreate from options or JSON
-            if json_input:
-                product_create = _parse_product_create_json(json_input)
-                logger.info("Creating product from JSON: title='%s'", product_create.title)
-            else:
-                product_create = _build_product_create_from_options(
-                    title=title,
-                    vendor=vendor,
-                    product_type=product_type,
-                    status=status,
-                    tags=tags,
-                    description=description,
-                    handle=handle,
-                    seo_title=seo_title,
-                    seo_description=seo_description,
-                )
-                logger.info("Creating product: title='%s'", product_create.title)
-
-            credentials = get_credentials_or_exit(config)
-
-            try:
-                with shopify_session(credentials) as session:
-                    product = create_product(session, product_create)
-                    logger.info("Product created: id='%s'", product.id)
-                    _output_product(product, output_format)
-            except (AuthenticationError, GraphQLError) as exc:
-                safe_console.echo(f"Error: {exc}", err=True)
-                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1) from exc
+        fields = _ProductFieldOptions(
+            title=title,
+            vendor=vendor,
+            product_type=product_type,
+            status=status,
+            tags=tags,
+            description=description,
+            handle=handle,
+            seo_title=seo_title,
+            seo_description=seo_description,
+        )
+        _run_create_product(
+            ctx,
+            fields=fields,
+            json_input=json_input,
+            output_format=output_format,
+            profile=profile,
+            get_credentials_or_exit=get_credentials_or_exit,
+            get_fix_suggestion=get_fix_suggestion,
+        )
 
     @cli_group.command("duplicate-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -535,37 +762,17 @@ def register_product_commands(
 
             lib-shopify-graphql duplicate-product 123456789 "Draft Copy" --status DRAFT --no-images
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {
-            "command": "duplicate-product",
-            "profile": effective_profile,
-            "product_id": product_id,
-            "new_title": new_title,
-        }
-
-        with lib_log_rich.runtime.bind(job_id="cli-duplicate-product", extra=extra):
-            logger.info("Duplicating product '%s' with new title '%s'", product_id, new_title)
-
-            credentials = get_credentials_or_exit(config)
-
-            try:
-                with shopify_session(credentials) as session:
-                    result = duplicate_product(
-                        session,
-                        product_id,
-                        new_title,
-                        include_images=not no_images,
-                        new_status=status,
-                    )
-                    logger.info("Product duplicated: original='%s', new='%s'", result.original_product_id, result.new_product.id)
-                    _output_product(result.new_product, output_format)
-            except ProductNotFoundError:
-                safe_console.echo(f"Source product not found: {product_id}", err=True)
-                raise SystemExit(1) from None
-            except (AuthenticationError, GraphQLError) as exc:
-                safe_console.echo(f"Error: {exc}", err=True)
-                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1) from exc
+        _run_duplicate_product(
+            ctx,
+            product_id=product_id,
+            new_title=new_title,
+            no_images=no_images,
+            status=status,
+            output_format=output_format,
+            profile=profile,
+            get_credentials_or_exit=get_credentials_or_exit,
+            get_fix_suggestion=get_fix_suggestion,
+        )
 
     @cli_group.command("delete-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -592,32 +799,16 @@ def register_product_commands(
         WARNING: This operation is irreversible. All variants, inventory,
         and associated data will be permanently deleted.
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "delete-product", "profile": effective_profile, "product_id": product_id}
-
-        with lib_log_rich.runtime.bind(job_id="cli-delete-product", extra=extra):
-            if not force and not _confirm_delete(product_id):
-                safe_console.echo("Aborted.")
-                raise SystemExit(0)
-
-            logger.info("Deleting product '%s'", product_id)
-
-            credentials = get_credentials_or_exit(config)
-
-            sku_resolver = _create_sku_resolver_for_delete(config, credentials, create_sku_cache_from_config)
-
-            try:
-                with shopify_session(credentials) as session:
-                    result = delete_product(session, product_id, sku_resolver=sku_resolver)
-                    logger.info("Product deleted: id='%s'", result.deleted_product_id)
-                    _output_delete_result(result, output_format)
-            except ProductNotFoundError:
-                safe_console.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1) from None
-            except (AuthenticationError, GraphQLError) as exc:
-                safe_console.echo(f"Error: {exc}", err=True)
-                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1) from exc
+        _run_delete_product(
+            ctx,
+            product_id=product_id,
+            force=force,
+            output_format=output_format,
+            profile=profile,
+            get_credentials_or_exit=get_credentials_or_exit,
+            get_fix_suggestion=get_fix_suggestion,
+            create_sku_cache_from_config=create_sku_cache_from_config,
+        )
 
     @cli_group.command("update-product", context_settings=CLICK_CONTEXT_SETTINGS)
     @argument("product_id", type=str)
@@ -682,42 +873,27 @@ def register_product_commands(
 
             lib-shopify-graphql update-product 123456789 --json updates.json
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "update-product", "profile": effective_profile, "product_id": product_id}
-
-        with lib_log_rich.runtime.bind(job_id="cli-update-product", extra=extra):
-            # Build ProductUpdate from options or JSON
-            if json_input:
-                product_update = _parse_product_update_json(json_input)
-                logger.info("Updating product '%s' from JSON", product_id)
-            else:
-                product_update = _build_product_update_from_options(
-                    title=title,
-                    vendor=vendor,
-                    product_type=product_type,
-                    status=status,
-                    tags=tags,
-                    description=description,
-                    handle=handle,
-                    seo_title=seo_title,
-                    seo_description=seo_description,
-                )
-                logger.info("Updating product '%s'", product_id)
-
-            credentials = get_credentials_or_exit(config)
-
-            try:
-                with shopify_session(credentials) as session:
-                    product = update_product(session, product_id, product_update)
-                    logger.info("Product updated: id='%s'", product.id)
-                    _output_product(product, output_format)
-            except ProductNotFoundError:
-                safe_console.echo(f"Product not found: {product_id}", err=True)
-                raise SystemExit(1) from None
-            except (AuthenticationError, GraphQLError) as exc:
-                safe_console.echo(f"Error: {exc}", err=True)
-                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1) from exc
+        fields = _ProductFieldOptions(
+            title=title,
+            vendor=vendor,
+            product_type=product_type,
+            status=status,
+            tags=tags,
+            description=description,
+            handle=handle,
+            seo_title=seo_title,
+            seo_description=seo_description,
+        )
+        _run_update_product(
+            ctx,
+            product_id=product_id,
+            fields=fields,
+            json_input=json_input,
+            output_format=output_format,
+            profile=profile,
+            get_credentials_or_exit=get_credentials_or_exit,
+            get_fix_suggestion=get_fix_suggestion,
+        )
 
 
 __all__ = [

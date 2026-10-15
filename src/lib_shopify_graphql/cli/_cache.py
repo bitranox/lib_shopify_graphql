@@ -12,7 +12,7 @@ from __future__ import annotations
 
 import logging
 from pathlib import Path
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, NoReturn
 
 import lib_log_rich.runtime
 import rich_click as click
@@ -241,6 +241,196 @@ def _display_skucache_details(result: Any) -> None:
 
 
 # =============================================================================
+# Command Runners
+# =============================================================================
+
+
+def _echo_sku_cache_not_configured() -> None:
+    """Print how to enable the SKU cache in the config file."""
+    safe_console.echo("SKU caching is not configured.", err=True)
+    safe_console.echo("Enable it in your config:", err=True)
+    safe_console.echo("  [shopify.sku_cache]", err=True)
+    safe_console.echo('  json_path = "/path/to/sku_cache.json"', err=True)
+
+
+def _run_tokencache_clear(ctx: click.Context, profile: str | None) -> None:
+    """Clear the token cache for the effective profile (body of ``tokencache-clear``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "tokencache-clear", "profile": effective_profile}
+
+    with lib_log_rich.runtime.bind(job_id="cli-tokencache-clear", extra=extra):
+        cache = create_token_cache_from_config(config)
+        if cache is None:
+            safe_console.echo("Token caching is not configured.", err=True)
+            safe_console.echo("Enable it in your config:", err=True)
+            safe_console.echo("  [shopify.token_cache]", err=True)
+            safe_console.echo("  enabled = true", err=True)
+            safe_console.echo('  json_path = "/path/to/token_cache.json"', err=True)
+            raise SystemExit(0)
+
+        logger.info("Clearing token cache for profile '%s'", effective_profile)
+        try:
+            tokencache_clear(cache)
+            safe_console.echo("✓ Token cache cleared.")
+        except Exception as exc:
+            safe_console.echo(f"Error clearing token cache: {exc}", err=True)
+            logger.error("Failed to clear token cache: %s", exc)
+            raise SystemExit(1) from exc
+
+
+def _run_skucache_clear(ctx: click.Context, profile: str | None) -> None:
+    """Clear the SKU cache for the effective profile (body of ``skucache-clear``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "skucache-clear", "profile": effective_profile}
+
+    with lib_log_rich.runtime.bind(job_id="cli-skucache-clear", extra=extra):
+        cache = create_sku_cache_from_config(config)
+        if cache is None:
+            _echo_sku_cache_not_configured()
+            raise SystemExit(0)
+
+        logger.info("Clearing SKU cache for profile '%s'", effective_profile)
+        try:
+            skucache_clear(cache)
+            safe_console.echo("✓ SKU cache cleared.")
+        except Exception as exc:
+            safe_console.echo(f"Error clearing SKU cache: {exc}", err=True)
+            logger.error("Failed to clear SKU cache: %s", exc)
+            raise SystemExit(1) from exc
+
+
+def _cleared_cache_names(token_cache: CachePort | None, sku_cache: CachePort | None) -> list[str]:
+    """Name the caches that were configured, in the order they are reported."""
+    cleared: list[str] = []
+    if token_cache is not None:
+        cleared.append("tokens")
+    if sku_cache is not None:
+        cleared.append("SKU mappings")
+    return cleared
+
+
+def _run_cache_clear_all(ctx: click.Context, profile: str | None) -> None:
+    """Clear every configured cache (body of ``cache-clear-all``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "cache-clear-all", "profile": effective_profile}
+
+    with lib_log_rich.runtime.bind(job_id="cli-cache-clear-all", extra=extra):
+        token_cache = create_token_cache_from_config(config)
+        sku_cache = create_sku_cache_from_config(config)
+
+        if token_cache is None and sku_cache is None:
+            safe_console.echo("No caches are configured.", err=True)
+            safe_console.echo("Configure caching in your config file.", err=True)
+            raise SystemExit(0)
+
+        logger.info("Clearing all caches for profile '%s'", effective_profile)
+        try:
+            cache_clear_all(token_cache, sku_cache)
+            safe_console.echo(f"✓ Cleared: {', '.join(_cleared_cache_names(token_cache, sku_cache))}.")
+        except Exception as exc:
+            safe_console.echo(f"Error clearing caches: {exc}", err=True)
+            logger.error("Failed to clear caches: %s", exc)
+            raise SystemExit(1) from exc
+
+
+def _exit_on_shopify_error(exc: Exception, credentials: Any, get_fix_suggestion: Any) -> NoReturn:
+    """Report an authentication or GraphQL error with its fix suggestion and exit 1."""
+    safe_console.echo(f"\n✗ Error: {exc}", err=True)
+    safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
+    raise SystemExit(1) from exc
+
+
+def _run_skucache_rebuild(
+    ctx: click.Context,
+    *,
+    profile: str | None,
+    query: str | None,
+    get_credentials_or_exit: Any,
+    get_fix_suggestion: Any,
+) -> None:
+    """Rebuild the SKU cache from Shopify (body of ``skucache-rebuild``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "skucache-rebuild", "profile": effective_profile, "query": query}
+
+    with lib_log_rich.runtime.bind(job_id="cli-skucache-rebuild", extra=extra):
+        sku_cache = create_sku_cache_from_config(config)
+        if sku_cache is None:
+            _echo_sku_cache_not_configured()
+            raise SystemExit(1)
+
+        credentials = get_credentials_or_exit(config)
+
+        safe_console.echo(f"Connecting to {credentials.shop_url}...")
+        try:
+            with shopify_session(credentials) as session:
+                safe_console.echo("✓ Connected")
+                sku_resolver = CachedSKUResolver(sku_cache, session._graphql_client)
+                safe_console.echo("Rebuilding SKU cache (this may take a while)...")
+                if query:
+                    safe_console.echo(f"  Filter: {query}")
+                total_variants = skucache_rebuild(session, sku_resolver=sku_resolver, query=query)
+                safe_console.echo(f"✓ Cache rebuilt: {total_variants} variants cached")
+                logger.info("Cache rebuild complete: %s variants cached", total_variants)
+        except (AuthenticationError, GraphQLError) as exc:
+            _exit_on_shopify_error(exc, credentials, get_fix_suggestion)
+
+
+def _report_skucache_check(result: Any, shop_url: str) -> None:
+    """Print the consistency check result and exit 1 when the cache is inconsistent."""
+    _display_skucache_summary(result, shop_url)
+    _display_skucache_details(result)
+
+    safe_console.echo("")
+    if result.is_consistent:
+        safe_console.echo("✓ Cache is consistent with Shopify")
+    else:
+        safe_console.echo("✗ Cache has inconsistencies - consider running 'skucache-rebuild'")
+
+    logger.info(
+        "Cache check complete: %s valid, %s stale, %s missing, %s mismatched",
+        result.valid,
+        len(result.stale),
+        len(result.missing),
+        len(result.mismatched),
+    )
+
+    if not result.is_consistent:
+        raise SystemExit(1)
+
+
+def _run_skucache_check(
+    ctx: click.Context,
+    *,
+    profile: str | None,
+    query: str | None,
+    get_credentials_or_exit: Any,
+    get_fix_suggestion: Any,
+) -> None:
+    """Compare the SKU cache with Shopify (body of ``skucache-check``)."""
+    config, effective_profile = get_effective_config_and_profile(ctx, profile)
+    extra = {"command": "skucache-check", "profile": effective_profile, "query": query}
+
+    with lib_log_rich.runtime.bind(job_id="cli-skucache-check", extra=extra):
+        sku_cache = create_sku_cache_from_config(config)
+        if sku_cache is None:
+            exit_sku_cache_not_configured()
+
+        credentials = get_credentials_or_exit(config)
+
+        safe_console.echo(f"Connecting to {credentials.shop_url}...")
+        try:
+            with shopify_session(credentials) as session:
+                safe_console.echo("✓ Connected")
+                safe_console.echo("Checking SKU cache consistency (this may take a while)...")
+                if query:
+                    safe_console.echo(f"  Filter: {query}")
+                result = skucache_check(session, sku_cache, query=query)
+                _report_skucache_check(result, credentials.shop_url)
+        except (AuthenticationError, GraphQLError) as exc:
+            _exit_on_shopify_error(exc, credentials, get_fix_suggestion)
+
+
+# =============================================================================
 # CLI Commands
 # =============================================================================
 
@@ -289,27 +479,7 @@ def register_cache_commands(
             # Clear token cache for production profile
             $ lib-shopify-graphql tokencache-clear --profile production
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "tokencache-clear", "profile": effective_profile}
-
-        with lib_log_rich.runtime.bind(job_id="cli-tokencache-clear", extra=extra):
-            cache = create_token_cache_from_config(config)
-            if cache is None:
-                safe_console.echo("Token caching is not configured.", err=True)
-                safe_console.echo("Enable it in your config:", err=True)
-                safe_console.echo("  [shopify.token_cache]", err=True)
-                safe_console.echo("  enabled = true", err=True)
-                safe_console.echo('  json_path = "/path/to/token_cache.json"', err=True)
-                raise SystemExit(0)
-
-            logger.info("Clearing token cache for profile '%s'", effective_profile)
-            try:
-                tokencache_clear(cache)
-                safe_console.echo("✓ Token cache cleared.")
-            except Exception as exc:
-                safe_console.echo(f"Error clearing token cache: {exc}", err=True)
-                logger.error("Failed to clear token cache: %s", exc)
-                raise SystemExit(1) from exc
+        _run_tokencache_clear(ctx, profile)
 
     @cli_group.command("skucache-clear", context_settings=CLICK_CONTEXT_SETTINGS)
     @option(
@@ -346,26 +516,7 @@ def register_cache_commands(
             # Clear SKU cache for production profile
             $ lib-shopify-graphql skucache-clear --profile production
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "skucache-clear", "profile": effective_profile}
-
-        with lib_log_rich.runtime.bind(job_id="cli-skucache-clear", extra=extra):
-            cache = create_sku_cache_from_config(config)
-            if cache is None:
-                safe_console.echo("SKU caching is not configured.", err=True)
-                safe_console.echo("Enable it in your config:", err=True)
-                safe_console.echo("  [shopify.sku_cache]", err=True)
-                safe_console.echo('  json_path = "/path/to/sku_cache.json"', err=True)
-                raise SystemExit(0)
-
-            logger.info("Clearing SKU cache for profile '%s'", effective_profile)
-            try:
-                skucache_clear(cache)
-                safe_console.echo("✓ SKU cache cleared.")
-            except Exception as exc:
-                safe_console.echo(f"Error clearing SKU cache: {exc}", err=True)
-                logger.error("Failed to clear SKU cache: %s", exc)
-                raise SystemExit(1) from exc
+        _run_skucache_clear(ctx, profile)
 
     @cli_group.command("cache-clear-all", context_settings=CLICK_CONTEXT_SETTINGS)
     @option(
@@ -390,33 +541,7 @@ def register_cache_commands(
             # Clear all caches for production profile
             $ lib-shopify-graphql cache-clear-all --profile production
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "cache-clear-all", "profile": effective_profile}
-
-        with lib_log_rich.runtime.bind(job_id="cli-cache-clear-all", extra=extra):
-            token_cache = create_token_cache_from_config(config)
-            sku_cache = create_sku_cache_from_config(config)
-
-            if token_cache is None and sku_cache is None:
-                safe_console.echo("No caches are configured.", err=True)
-                safe_console.echo("Configure caching in your config file.", err=True)
-                raise SystemExit(0)
-
-            logger.info("Clearing all caches for profile '%s'", effective_profile)
-            try:
-                cache_clear_all(token_cache, sku_cache)
-
-                cleared: list[str] = []
-                if token_cache is not None:
-                    cleared.append("tokens")
-                if sku_cache is not None:
-                    cleared.append("SKU mappings")
-
-                safe_console.echo(f"✓ Cleared: {', '.join(cleared)}.")
-            except Exception as exc:
-                safe_console.echo(f"Error clearing caches: {exc}", err=True)
-                logger.error("Failed to clear caches: %s", exc)
-                raise SystemExit(1) from exc
+        _run_cache_clear_all(ctx, profile)
 
     @cli_group.command("skucache-rebuild", context_settings=CLICK_CONTEXT_SETTINGS)
     @option(
@@ -442,48 +567,13 @@ def register_cache_commands(
 
         Requires credentials and SKU cache configured in config file.
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "skucache-rebuild", "profile": effective_profile, "query": query}
-
-        with lib_log_rich.runtime.bind(job_id="cli-skucache-rebuild", extra=extra):
-            # Check SKU cache is configured
-            sku_cache = create_sku_cache_from_config(config)
-            if sku_cache is None:
-                safe_console.echo("SKU caching is not configured.", err=True)
-                safe_console.echo("Enable it in your config:", err=True)
-                safe_console.echo("  [shopify.sku_cache]", err=True)
-                safe_console.echo('  json_path = "/path/to/sku_cache.json"', err=True)
-                raise SystemExit(1)
-
-            # Extract credentials
-            credentials = get_credentials_or_exit(config)
-
-            # Login and rebuild
-            safe_console.echo(f"Connecting to {credentials.shop_url}...")
-            try:
-                with shopify_session(credentials) as session:
-                    safe_console.echo("✓ Connected")
-
-                    # Create SKU resolver with the cache
-                    sku_resolver = CachedSKUResolver(sku_cache, session._graphql_client)
-
-                    safe_console.echo("Rebuilding SKU cache (this may take a while)...")
-                    if query:
-                        safe_console.echo(f"  Filter: {query}")
-
-                    total_variants = skucache_rebuild(
-                        session,
-                        sku_resolver=sku_resolver,
-                        query=query,
-                    )
-
-                    safe_console.echo(f"✓ Cache rebuilt: {total_variants} variants cached")
-                    logger.info("Cache rebuild complete: %s variants cached", total_variants)
-
-            except (AuthenticationError, GraphQLError) as exc:
-                safe_console.echo(f"\n✗ Error: {exc}", err=True)
-                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1) from exc
+        _run_skucache_rebuild(
+            ctx,
+            profile=profile,
+            query=query,
+            get_credentials_or_exit=get_credentials_or_exit,
+            get_fix_suggestion=get_fix_suggestion,
+        )
 
     @cli_group.command("skucache-check", context_settings=CLICK_CONTEXT_SETTINGS)
     @option(
@@ -512,51 +602,13 @@ def register_cache_commands(
 
         Requires credentials and SKU cache configured in config file.
         """
-        config, effective_profile = get_effective_config_and_profile(ctx, profile)
-        extra = {"command": "skucache-check", "profile": effective_profile, "query": query}
-
-        with lib_log_rich.runtime.bind(job_id="cli-skucache-check", extra=extra):
-            sku_cache = create_sku_cache_from_config(config)
-            if sku_cache is None:
-                exit_sku_cache_not_configured()
-
-            credentials = get_credentials_or_exit(config)
-
-            safe_console.echo(f"Connecting to {credentials.shop_url}...")
-            try:
-                with shopify_session(credentials) as session:
-                    safe_console.echo("✓ Connected")
-
-                    safe_console.echo("Checking SKU cache consistency (this may take a while)...")
-                    if query:
-                        safe_console.echo(f"  Filter: {query}")
-
-                    result = skucache_check(session, sku_cache, query=query)
-
-                    _display_skucache_summary(result, credentials.shop_url)
-                    _display_skucache_details(result)
-
-                    safe_console.echo("")
-                    if result.is_consistent:
-                        safe_console.echo("✓ Cache is consistent with Shopify")
-                    else:
-                        safe_console.echo("✗ Cache has inconsistencies - consider running 'skucache-rebuild'")
-
-                    logger.info(
-                        "Cache check complete: %s valid, %s stale, %s missing, %s mismatched",
-                        result.valid,
-                        len(result.stale),
-                        len(result.missing),
-                        len(result.mismatched),
-                    )
-
-                    if not result.is_consistent:
-                        raise SystemExit(1)
-
-            except (AuthenticationError, GraphQLError) as exc:
-                safe_console.echo(f"\n✗ Error: {exc}", err=True)
-                safe_console.echo(get_fix_suggestion(exc, credentials), err=True)
-                raise SystemExit(1) from exc
+        _run_skucache_check(
+            ctx,
+            profile=profile,
+            query=query,
+            get_credentials_or_exit=get_credentials_or_exit,
+            get_fix_suggestion=get_fix_suggestion,
+        )
 
 
 __all__ = [
