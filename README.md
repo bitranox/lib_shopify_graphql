@@ -66,10 +66,10 @@ uv pip install lib_shopify_graphql
 
 The library supports optional features via extras:
 
-| Extra | Description | Install Command |
-|-------|-------------|-----------------|
-| `mysql` | MySQL cache backend (pymysql) | `uv pip install lib_shopify_graphql[mysql]` |
-| `dev` | Development tools (pytest, ruff, etc.) | `uv pip install lib_shopify_graphql[dev]` |
+| Extra   | Description                            | Install Command                             |
+|---------|----------------------------------------|---------------------------------------------|
+| `mysql` | MySQL cache backend (pymysql)          | `uv pip install lib_shopify_graphql[mysql]` |
+| `dev`   | Development tools (pytest, ruff, etc.) | `uv pip install lib_shopify_graphql[dev]`   |
 
 ```bash
 # Install with MySQL support
@@ -89,6 +89,36 @@ For alternative install paths (pip, pipx, uvx, source builds, etc.), see [INSTAL
 - The project targets **Python 3.10 and newer**.
 - Runtime dependencies stay on current stable releases.
 - CI workflows exercise GitHub's rolling runner images covering Python 3.10, 3.11, 3.12, and 3.13.
+
+### Why we recommend uv: supply-chain protection
+
+This repository commits a `uv.lock`. It pins every package the project needs, transitive
+dependencies included, to an exact version and to the hashes of that version's files. The
+`exclude-newer` setting under `[tool.uv]` in `pyproject.toml` adds a cooldown: uv leaves any
+release younger than that out of the lock. CI installs from the lock, so a hijacked release that
+gets pulled again within the cooldown never reaches our builds, and a file whose hash does not
+match is refused.
+
+That protection stays in this repository. The installable package declares only lower bounds
+(`>=`) for its dependencies, so a plain `pip install` takes the newest release of every transitive
+dependency at the moment you run it. If one of them was hijacked an hour earlier, you get the
+hijacked version. `pipx install` and `uv tool install` without options do the same.
+
+To install the command line tool with a cooldown of your own (uv then skips any release younger
+than 7 days, transitive ones included), or to run the exact tree our CI tests:
+
+```bash
+uv tool install --exclude-newer "7 days" lib_shopify_graphql
+git clone https://github.com/bitranox/lib_shopify_graphql.git && cd lib_shopify_graphql && uv sync --locked && uv run lib_shopify_graphql --help
+```
+
+If you depend on lib_shopify_graphql in your own project, give that project the same cooldown (7 days here, as
+an example) and commit the `uv.lock` that `uv add lib_shopify_graphql` writes:
+
+```toml
+[tool.uv]
+exclude-newer = "7 days"
+```
 
 ---
 
@@ -259,13 +289,13 @@ layers = [
 
 ## Documentation
 
-| Document | Description |
-|----------|-------------|
-| [CLI Usage](docs/cli.md) | Command-line interface commands and configuration |
-| [Caching](docs/caching.md) | Token and SKU caching with JSON or MySQL backends |
-| [Shopify App Setup](docs/shopify_setup.md) | Setting up Shopify app credentials |
-| [API Reference](docs/api_reference.md) | Complete API documentation for all functions and models |
-| [Module Reference](docs/systemdesign/module_reference.md) | Internal module documentation |
+| Document                                                  | Description                                             |
+|-----------------------------------------------------------|---------------------------------------------------------|
+| [CLI Usage](docs/cli.md)                                  | Command-line interface commands and configuration       |
+| [Caching](docs/caching.md)                                | Token and SKU caching with JSON or MySQL backends       |
+| [Shopify App Setup](docs/shopify_setup.md)                | Setting up Shopify app credentials                      |
+| [API Reference](docs/api_reference.md)                    | Complete API documentation for all functions and models |
+| [Module Reference](docs/systemdesign/module_reference.md) | Internal module documentation                           |
 
 ---
 

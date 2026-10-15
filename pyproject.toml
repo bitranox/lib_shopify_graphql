@@ -14,9 +14,9 @@ dependencies = [
     # `make test` and rewrites every floor to the current release, so lowering it by hand does
     # not stick - the next `make test` puts it back.
     "click>=8.5.0",
-    "lib_cli_exit_tools>=2.4.0",
-    "lib_log_rich>=6.5.1",
-    "lib_layered_config>=7.1.6",
+    "lib_cli_exit_tools>=2.4.1",
+    "lib_log_rich>=6.5.2",
+    "lib_layered_config>=7.1.9",
     "filelock>=4.1.0",
     "orjson>=3.13.0",
     "httpx2>=2.13.1",
@@ -32,6 +32,8 @@ classifiers = [
   "Programming Language :: Python :: 3.11",
   "Programming Language :: Python :: 3.12",
   "Programming Language :: Python :: 3.13",
+  "Programming Language :: Python :: 3.14",
+  "Programming Language :: Python :: 3.15",
   "License :: OSI Approved :: MIT License",
   "Environment :: Console",
   "Operating System :: OS Independent",
@@ -59,8 +61,6 @@ dev = [
   "ruff>=0.17.0",
   "pyright[nodejs]>=1.1.414",
   "bandit>=1.9.4",
-  # 1.5.1 was yanked upstream (unintended breaking changes), so 1.5.0 is the newest usable
-  # release; a >=1.5.1 floor has ZERO candidates and makes this extra unresolvable.
   "build>=1.6.1",
   "twine>=7.0.0",
   # codecov-cli is disabled, not dropped: it requires click<8.3.0, which holds click at
@@ -309,4 +309,4 @@ ignore-vulns = [
 
 [tool.uv]
 exclude-newer = "1 day"
-exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false, pydantic = "2026-10-11T18:37:56Z", pydantic-core = "2026-10-11T18:35:45Z", rtoml = "2026-10-12T00:17:16Z"}
+exclude-newer-package = {lib-cli-exit-tools = false, lib-layered-config = false, lib-log-rich = false}

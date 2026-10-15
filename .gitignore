@@ -182,7 +182,6 @@ result
 # Optional lockfiles (for alternative managers)
 poetry.lock
 pdm.lock
-uv.lock
 
 # KI
 CLAUDE.md
