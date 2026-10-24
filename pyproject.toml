@@ -155,7 +155,10 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 [tool.ruff.lint.per-file-ignores]
 # ignore the "unused import sys" in the jupyter notebook - which we need (it is a linter hickup)
 # T20: the whole point of a demo/tutorial notebook is printing visible output per cell.
-"notebooks/*.ipynb" = ["F401", "T20"]
+# A `!cmd` never raises, so CI sees a failing shell command only through
+# `assert _exit_code == N` after it: IPython injects `_exit_code` at run time (F821)
+# and those asserts are the gate (S101).
+"notebooks/*.ipynb" = ["F401", "T20", "F821", "S101"]
 # Tests: assert is standard, test fixtures have passwords, magic values are clearer inline, temp
 # paths are fine. PLC0415: several tests import inside the test body to exercise import-time and
 # cache behaviour, so moving them to module top would defeat intent.
