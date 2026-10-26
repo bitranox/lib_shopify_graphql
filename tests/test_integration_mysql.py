@@ -30,7 +30,6 @@ import pytest
 
 if TYPE_CHECKING:
     from conftest import MySQLTestState
-
     from lib_shopify_graphql import Product, ShopifySession
 
 

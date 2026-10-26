@@ -15,8 +15,8 @@ from typing import TYPE_CHECKING, Any
 
 import lib_cli_exit_tools
 import pytest
-from conftest import FakeSession, MockConfig
 
+from conftest import FakeSession, MockConfig
 from lib_shopify_graphql import __init__conf__
 from lib_shopify_graphql import cli as cli_mod
 from lib_shopify_graphql.cli import TracebackState

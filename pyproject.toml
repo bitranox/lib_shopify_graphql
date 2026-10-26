@@ -15,7 +15,7 @@ dependencies = [
     # not stick - the next `make test` puts it back.
     "click>=8.5.0",
     "lib_cli_exit_tools>=2.4.1",
-    "lib_log_rich>=6.5.7",
+    "lib_log_rich>=7.0.1",
     "lib_layered_config>=7.3.0",
     "filelock>=4.1.0",
     "orjson>=3.13.0",
@@ -176,6 +176,7 @@ runtime-evaluated-base-classes = ["pydantic.BaseModel"]
 typeCheckingMode = "strict"
 extraPaths = [
   "src",
+  "tests",
 ]
 exclude = [
   # Restore pyright's built-in default excludes (setting `exclude` overrides them).
@@ -192,6 +193,7 @@ exclude = [
 reportPrivateUsage = "none"
 # Click CLI commands are registered via decorators, not called directly
 reportUnusedFunction = "none"
+executionEnvironments = [{root = "tests"}]
 
 [tool.pytest.ini_options]
 addopts = [
@@ -210,7 +212,7 @@ addopts = [
   "--ignore=src/lib_shopify_graphql/shopify_client/_inventory.py",
 ]
 doctest_optionflags = ["ELLIPSIS", "NORMALIZE_WHITESPACE"]
-pythonpath = ["src"]
+pythonpath = ["src", "tests"]
 markers = [
   "os_agnostic: test runs on every supported operating system",
   "os_windows: test exercises Windows-only behavior",
@@ -221,6 +223,7 @@ markers = [
   "local_only: tests that only run locally, not in CI",
   "mysql_integration: MySQL backend integration tests (skipped in CI)",
 ]
+testpaths = ["src", "tests"]
 
 [tool.coverage.run]
 branch = true
