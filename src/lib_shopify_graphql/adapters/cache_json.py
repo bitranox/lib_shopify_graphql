@@ -89,11 +89,15 @@ class JsonFileCacheAdapter:
         lock_timeout: Maximum time to wait for lock acquisition.
 
     Example:
+        >>> import shutil
+        >>> import tempfile
         >>> from pathlib import Path
-        >>> cache = JsonFileCacheAdapter(Path("/tmp/sku_cache.json"))
+        >>> cache_dir = Path(tempfile.mkdtemp())
+        >>> cache = JsonFileCacheAdapter(cache_dir / "sku_cache.json")
         >>> cache.set("sku:myshop:ABC-123", "gid://shopify/ProductVariant/123")
         >>> cache.get("sku:myshop:ABC-123")
         'gid://shopify/ProductVariant/123'
+        >>> shutil.rmtree(cache_dir)
     """
 
     def __init__(

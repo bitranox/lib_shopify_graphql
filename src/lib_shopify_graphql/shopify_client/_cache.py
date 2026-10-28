@@ -85,17 +85,21 @@ def tokencache_clear(cache: CachePort) -> None:
         cache: The token cache adapter to clear.
 
     Example:
+        >>> import shutil
+        >>> import tempfile
         >>> from pathlib import Path
         >>> from lib_shopify_graphql import tokencache_clear
         >>> from lib_shopify_graphql.adapters import JsonFileCacheAdapter
         >>>
-        >>> cache = JsonFileCacheAdapter(Path("/tmp/token_cache.json"))
+        >>> cache_dir = Path(tempfile.mkdtemp())
+        >>> cache = JsonFileCacheAdapter(cache_dir / "token_cache.json")
         >>> tokencache_clear(cache)
 
         >>> # Or using composition helper
         >>> from lib_shopify_graphql.composition import create_json_cache
-        >>> cache = create_json_cache(Path("/tmp/token_cache.json"))
+        >>> cache = create_json_cache(cache_dir / "token_cache.json")
         >>> tokencache_clear(cache)
+        >>> shutil.rmtree(cache_dir)
     """
     logger.info("Clearing token cache")
     cache.clear()
@@ -112,17 +116,21 @@ def skucache_clear(cache: CachePort) -> None:
         cache: The SKU cache adapter to clear.
 
     Example:
+        >>> import shutil
+        >>> import tempfile
         >>> from pathlib import Path
         >>> from lib_shopify_graphql import skucache_clear
         >>> from lib_shopify_graphql.adapters import JsonFileCacheAdapter
         >>>
-        >>> cache = JsonFileCacheAdapter(Path("/tmp/sku_cache.json"))
+        >>> cache_dir = Path(tempfile.mkdtemp())
+        >>> cache = JsonFileCacheAdapter(cache_dir / "sku_cache.json")
         >>> skucache_clear(cache)
 
         >>> # Or using composition helper
         >>> from lib_shopify_graphql.composition import create_json_cache
-        >>> cache = create_json_cache(Path("/tmp/sku_cache.json"))
+        >>> cache = create_json_cache(cache_dir / "sku_cache.json")
         >>> skucache_clear(cache)
+        >>> shutil.rmtree(cache_dir)
     """
     logger.info("Clearing SKU cache")
     cache.clear()
@@ -143,13 +151,17 @@ def cache_clear_all(
         sku_cache: The SKU cache adapter to clear.
 
     Example:
+        >>> import shutil
+        >>> import tempfile
         >>> from pathlib import Path
         >>> from lib_shopify_graphql import cache_clear_all
         >>> from lib_shopify_graphql.adapters import JsonFileCacheAdapter
         >>>
-        >>> token_cache = JsonFileCacheAdapter(Path("/tmp/token_cache.json"))
-        >>> sku_cache = JsonFileCacheAdapter(Path("/tmp/sku_cache.json"))
+        >>> cache_dir = Path(tempfile.mkdtemp())
+        >>> token_cache = JsonFileCacheAdapter(cache_dir / "token_cache.json")
+        >>> sku_cache = JsonFileCacheAdapter(cache_dir / "sku_cache.json")
         >>> cache_clear_all(token_cache, sku_cache)
+        >>> shutil.rmtree(cache_dir)
     """
     if token_cache is not None:
         tokencache_clear(token_cache)

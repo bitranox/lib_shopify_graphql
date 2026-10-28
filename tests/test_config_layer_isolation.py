@@ -10,14 +10,10 @@ environment variables the conftest sets.
 
 from __future__ import annotations
 
-import json
-import os
-import subprocess
-import sys
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 import pytest
+from collected_doctests import collect_src_doctests
 from lib_layered_config import deploy_config_paths
 
 from lib_shopify_graphql import __init__conf__
@@ -25,29 +21,11 @@ from lib_shopify_graphql.config import get_config, get_default_config_path
 
 if TYPE_CHECKING:
     from collections.abc import Iterator
+    from pathlib import Path
 
-
-_REPO_ROOT = Path(__file__).resolve().parents[1]
 
 #: The fixtures that keep the machine's configuration layers out of a test.
 _LAYER_REDIRECTS = frozenset({"system_layers_in_tmp_path", "user_layer_in_tmp_path"})
-
-#: A pytest plugin writing the fixtures each collected doctest gets. ``--fixtures-per-test`` would
-#: answer this directly, but it crashes on doctest items (pytest 9.1: DoctestItem has no ``function``).
-_DOCTEST_FIXTURE_REPORT_PLUGIN = """\
-import json
-import os
-
-import pytest
-
-
-def pytest_collection_modifyitems(items):
-    report = {
-        item.nodeid: sorted(item.fixturenames) for item in items if isinstance(item, pytest.DoctestItem)
-    }
-    with open(os.environ["DOCTEST_FIXTURE_REPORT"], "w", encoding="utf-8") as report_file:
-        json.dump(report, report_file)
-"""
 
 
 @pytest.fixture
@@ -94,23 +72,7 @@ def test_a_file_in_the_redirected_user_layer_is_what_the_loader_reads(user_layer
 @pytest.mark.os_agnostic
 def test_every_doctest_collected_from_src_gets_the_layer_redirects(tmp_path: Path) -> None:
     """``--doctest-modules`` collects ``src/`` too; a fixture in ``tests/conftest.py`` would not reach it."""
-    (tmp_path / "_doctest_fixture_report.py").write_text(_DOCTEST_FIXTURE_REPORT_PLUGIN, encoding="utf-8")
-    report_file = tmp_path / "doctest-fixtures.json"
-    python_path = os.pathsep.join(filter(None, [str(tmp_path), os.environ.get("PYTHONPATH", "")]))
-    env = {**os.environ, "PYTHONPATH": python_path, "DOCTEST_FIXTURE_REPORT": str(report_file)}
-    command = [sys.executable, "-m", "pytest", "--collect-only", "-q", "-p", "no:cacheprovider"]
-    completed = subprocess.run(  # noqa: S603 - fixed argv: this interpreter running pytest on this repo
-        [*command, "-p", "_doctest_fixture_report", "src"],
-        cwd=_REPO_ROOT,
-        env=env,
-        capture_output=True,
-        text=True,
-        encoding="utf-8",
-        errors="replace",
-        check=False,
-    )
-    assert completed.returncode == 0, completed.stdout + completed.stderr
-    report: dict[str, list[str]] = json.loads(report_file.read_text(encoding="utf-8"))
+    report = {node: doctest["fixtures"] for node, doctest in collect_src_doctests(tmp_path).items()}
     assert report, "no doctest was collected from src/, so this test checks nothing"
 
     unredirected = {node: names for node, names in report.items() if not set(names) >= _LAYER_REDIRECTS}

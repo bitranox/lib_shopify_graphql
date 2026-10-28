@@ -456,41 +456,18 @@ def pytest_runtest_setup(item: pytest.Item) -> None:
         pytest.skip("test runs only locally (skipped in CI)")
 
 
-# Several doctests in src/ write, read and clear the same fixed cache files in the
-# system temp directory. Run in parallel (pytest-xdist), one worker's clear lands
-# between another's set and get, and the get returns nothing. Every doctest naming
-# one of these files therefore runs on a single worker, one after another.
-SHARED_TEMP_CACHE_FILES: tuple[str, ...] = ("/tmp/sku_cache.json", "/tmp/token_cache.json")
-SHARED_TEMP_CACHE_GROUP = "shared-temp-cache-files"
-
-
-def _doctest_uses_a_shared_temp_cache_file(item: pytest.Item) -> bool:
-    """Tell whether ``item`` is a doctest whose example names a shared cache file."""
-    doctest = getattr(item, "dtest", None)
-    docstring = getattr(doctest, "docstring", None)
-    return isinstance(docstring, str) and any(path in docstring for path in SHARED_TEMP_CACHE_FILES)
-
-
-# tryfirst: pytest-xdist reads the xdist_group marks in its own modifyitems hook,
-# so a mark added after that hook has run groups nothing.
-@pytest.hookimpl(tryfirst=True)
 def pytest_collection_modifyitems(items: list[pytest.Item]) -> None:
     """Sort CLI tests alphabetically within TestCLICommands class.
 
     This ensures cache management tests (00-09) run first,
     other tests (10-79) run in the middle, and cache consistency
     checks (90+) run last.
-
-    Doctests that share a fixed cache file in the temp directory are put in
-    one xdist group, so they never run at the same time.
     """
     # Group items by their parent class
     cli_tests: list[pytest.Item] = []
     other_tests: list[pytest.Item] = []
 
     for item in items:
-        if _doctest_uses_a_shared_temp_cache_file(item):
-            item.add_marker(pytest.mark.xdist_group(SHARED_TEMP_CACHE_GROUP))
         if "TestCLICommands" in item.nodeid:
             cli_tests.append(item)
         else:
