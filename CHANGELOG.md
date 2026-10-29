@@ -23,6 +23,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `tests` (which keeps the root `conftest.py` out of doctest collection), adds `tests` to `pythonpath`
   and pyright's `extraPaths`, and gives pyright an execution environment rooted at `tests/`. A test
   checks that every doctest collected from `src/` gets both redirects.
+- The `health` fix-suggestion test for a connection error now compares the two lines naming the shop
+  exactly, so a wrong shop host such as `xtest.myshopify.com` no longer passes it.
 
 ## [2.1.2] 2026-10-15 16:56:50
 

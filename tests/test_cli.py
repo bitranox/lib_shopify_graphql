@@ -682,7 +682,10 @@ class TestGetFixSuggestion:
         suggestion = cli_mod._get_fix_suggestion(error, credentials)
 
         assert "network" in suggestion.lower()
-        assert "test.myshopify.com" in suggestion
+        assert suggestion.splitlines()[1:3] == [
+            "  2. Verify the shop URL is correct: test.myshopify.com",
+            "  3. Ensure https://test.myshopify.com is accessible",
+        ]
 
 
 @pytest.mark.os_agnostic
