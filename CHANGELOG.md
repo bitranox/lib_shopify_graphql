@@ -31,7 +31,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   A URL that only mentions the GCS host or an `X-Goog-` name elsewhere (for example
   `storage.googleapis.com.example.net`, or in the path or a query value) now gets the POST.
 
-## [2.1.2] 2026-10-15 16:56:50
+## [2.1.2] - 2026-10-15
 
 ### Fixed
 
@@ -52,7 +52,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   (`pytest_runtest_setup` in `tests/conftest.py`); registered in `pyproject.toml` alone they skipped
   nothing, so a test trusting its marker ran everywhere. `tests/test_platform_markers.py` pins it.
 
-## [2.1.1] 2026-10-15 10:39:55
+## [2.1.1] - 2026-10-15
 
 ### Added
 - Python 3.14 and 3.15 are supported versions: declared in the classifiers, so CI and `make test-all` run them.
@@ -64,7 +64,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - The install section explains why installing with uv protects against supply-chain attacks and why
   a plain `pip install` from PyPI does not.
 
-## [2.1.0] 2026-10-12 19:06:46
+## [2.1.0] - 2026-10-12
 
 ### Fixed
 - **The cache factory validates its config sections at the boundary.** A digit-only
@@ -82,7 +82,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `LIB_LOG_RICH__ENVIRONMENT`. Numeric settings still read as numbers and a non-numeric value
   for one is still refused.
 
-## [2.0.10] 2026-10-05 20:05:32
+## [2.0.10] - 2026-10-05
 
 ### Fixed
 - `python -m lib_shopify_graphql` now runs `cli.main()`, the function the console scripts run, instead of a separate session: a usage error or unknown command exits 2 (was 1) and traceback handling matches the console script.
@@ -197,7 +197,7 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 - Removed `cast()` calls in adapter cache - TypedDict provides proper typing
 - Removed duplicate StrEnum compatibility shims (consolidated to `_compat.py`)
 
-## [2.0.9] 2026-08-01 00:43:58
+## [2.0.9] - 2026-08-01
 ### Fixed
 - **Console output no longer crashes on a legacy codepage.** A Windows console at codepage 1252
   hands Python an `errors="strict"` stream, so writing a non-ASCII character such as a check mark
@@ -209,17 +209,17 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   module reaches for `click.echo` or builds an unwrapped `Console(file=sys.stdout)` again.
 
 
-## [2.0.8] 2026-07-24 17:56:44
+## [2.0.8] - 2026-07-24
 
-## [2.0.7] 2026-06-14 21:48:55
+## [2.0.7] - 2026-06-14
 
-## [2.0.6] 2026-06-01 14:06:00
+## [2.0.6] - 2026-06-01
 
-## [2.0.5] 2026-04-24 12:02:07
+## [2.0.5] - 2026-04-24
 
-## [2.0.4] 2026-03-09 13:03:28
+## [2.0.4] - 2026-03-09
 
-## [2.0.3] 2026-03-09 11:52:50
+## [2.0.3] - 2026-03-09
 
 ### Added
 - `test-slow` target added to interactive TUI menu for running integration tests
