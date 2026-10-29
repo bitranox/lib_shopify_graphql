@@ -25,6 +25,11 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   checks that every doctest collected from `src/` gets both redirects.
 - The `health` fix-suggestion test for a connection error now compares the two lines naming the shop
   exactly, so a wrong shop host such as `xtest.myshopify.com` no longer passes it.
+- An image file upload decides between the Google Cloud Storage PUT and the multipart POST from the
+  parsed staged-upload URL instead of a substring search: it is GCS when the host is
+  `storage.googleapis.com` or a subdomain of it, or when a query parameter name starts with `X-Goog-`.
+  A URL that only mentions the GCS host or an `X-Goog-` name elsewhere (for example
+  `storage.googleapis.com.example.net`, or in the path or a query value) now gets the POST.
 
 ## [2.1.2] 2026-10-15 16:56:50
 

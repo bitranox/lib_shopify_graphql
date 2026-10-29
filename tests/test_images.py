@@ -37,6 +37,7 @@ from lib_shopify_graphql.adapters.parsers import (
 )
 from lib_shopify_graphql.models._images import StagedUploadParameter
 from lib_shopify_graphql.models._internal import UNSET
+from lib_shopify_graphql.shopify_client._images import _is_gcs_signed_url
 
 # =============================================================================
 # ImageSource Model Tests
@@ -588,3 +589,51 @@ class TestNormalizeMediaGid:
         result = _normalize_media_gid("123")
 
         assert result == "gid://shopify/MediaImage/123"
+
+
+_SIGNED_QUERY = (
+    "X-Goog-Algorithm=GOOG4-RSA-SHA256&X-Goog-Credential=uploads%2F20261029%2Fauto%2Fstorage%2Fgoog4_request"
+    "&X-Goog-Date=20261029T000000Z&X-Goog-Expires=604800&X-Goog-SignedHeaders=host&X-Goog-Signature=abc123"
+)
+
+
+@pytest.mark.os_agnostic
+class TestIsGcsSignedUrl:
+    """_is_gcs_signed_url picks PUT only for a URL that really is Google Cloud Storage."""
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            pytest.param(
+                f"https://shopify-staged-uploads.storage.googleapis.com/tmp/1/products/a/image.jpg?{_SIGNED_QUERY}",
+                id="bucket-subdomain-signed",
+            ),
+            pytest.param(f"https://storage.googleapis.com/shopify-staged-uploads/tmp/image.jpg?{_SIGNED_QUERY}", id="path-style-signed"),
+            pytest.param("https://shopify-staged-uploads.storage.googleapis.com/", id="bucket-subdomain-bare"),
+            pytest.param("https://storage.googleapis.com/shopify-staged-uploads/tmp/image.jpg", id="path-style-bare"),
+            pytest.param("https://storage.googleapis.com:443/bucket/image.jpg", id="explicit-port"),
+            pytest.param("https://STORAGE.GOOGLEAPIS.COM/bucket/image.jpg", id="upper-case-host"),
+            pytest.param("https://uploads.example.com/image.jpg?X-Goog-Signature=abc123", id="signature-query-other-host"),
+            pytest.param("https://uploads.example.com/image.jpg?X-Goog-Signature", id="signature-query-name-only"),
+        ],
+    )
+    def test_real_gcs_urls_are_gcs(self, url: str) -> None:
+        """A GCS host (or a subdomain of it) or an X-Goog-* query parameter name marks a GCS signed URL."""
+        assert _is_gcs_signed_url(url) is True
+
+    @pytest.mark.parametrize(
+        "url",
+        [
+            pytest.param("https://storage.googleapis.com.example.net/upload", id="gcs-host-as-prefix"),
+            pytest.param("https://evilstorage.googleapis.com/upload", id="gcs-host-as-suffix-without-dot"),
+            pytest.param("https://uploads.example.net/storage.googleapis.com/image.jpg", id="gcs-host-in-path"),
+            pytest.param("https://uploads.example.net/upload?next=https://storage.googleapis.com/b", id="gcs-host-in-query-value"),
+            pytest.param("https://uploads.example.net/upload?note=X-Goog-Signature", id="goog-name-in-query-value"),
+            pytest.param("https://uploads.example.net/X-Goog-Signature/image.jpg", id="goog-name-in-path"),
+            pytest.param("https://shopify-staged-uploads.s3.amazonaws.com/", id="s3-style"),
+            pytest.param("https://[storage.googleapis.com/upload", id="unparseable-url"),
+        ],
+    )
+    def test_near_miss_urls_are_not_gcs(self, url: str) -> None:
+        """A GCS host or X-Goog- name appearing anywhere but the host or a query parameter name is not GCS."""
+        assert _is_gcs_signed_url(url) is False

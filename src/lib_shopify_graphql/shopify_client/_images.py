@@ -14,6 +14,7 @@ from __future__ import annotations
 import logging
 import mimetypes
 from typing import TYPE_CHECKING, Any, TypedDict, cast
+from urllib.parse import parse_qsl, urlsplit
 
 import httpx2
 from pydantic import BaseModel, ConfigDict
@@ -137,6 +138,44 @@ def _get_mime_type(file_path: Path) -> str:
     return mime_type or "image/jpeg"
 
 
+_GCS_HOST = "storage.googleapis.com"
+_GCS_SIGNED_QUERY_PREFIX = "X-Goog-"
+
+
+def _is_gcs_signed_url(url: str) -> bool:
+    """Tell whether a staged upload URL is a Google Cloud Storage signed URL.
+
+    Only the URL's parts are consulted, never its whole text: a GCS host name or an
+    ``X-Goog-`` name sitting in the path or in a query VALUE (or a host that merely starts
+    with the GCS name, such as ``storage.googleapis.com.example.net``) does not count.
+
+    Args:
+        url: The staged upload URL Shopify returned.
+
+    Returns:
+        True when the host is ``storage.googleapis.com`` or a subdomain of it (path-style
+        and bucket-subdomain URLs), or when a query parameter NAME starts with ``X-Goog-``
+        (the V4 signature parameters such as ``X-Goog-Signature``).
+
+    Examples:
+        >>> _is_gcs_signed_url("https://bucket.storage.googleapis.com/o.jpg?X-Goog-Signature=abc")
+        True
+        >>> _is_gcs_signed_url("https://storage.googleapis.com.example.net/o.jpg")
+        False
+    """
+    try:
+        parts = urlsplit(url)
+    except ValueError:
+        # An unparseable URL (for example an unclosed IPv6 bracket) is no GCS signed URL;
+        # the substring check this replaces never raised, so neither does this one.
+        return False
+    host = parts.hostname or ""
+    if host == _GCS_HOST or host.endswith(f".{_GCS_HOST}"):
+        return True
+    query_names = (name for name, _ in parse_qsl(parts.query, keep_blank_values=True))
+    return any(name.startswith(_GCS_SIGNED_QUERY_PREFIX) for name in query_names)
+
+
 def _create_staged_upload(
     session: ShopifySession,
     file_path: Path,
@@ -209,7 +248,7 @@ def _upload_file_to_staged_target(
 
     try:
         # Check if this is a Google Cloud Storage signed URL
-        if "X-Goog-" in staged_target.url or "storage.googleapis.com" in staged_target.url:
+        if _is_gcs_signed_url(staged_target.url):
             # GCS uses PUT with file as body
             response = httpx2.put(
                 staged_target.url,
