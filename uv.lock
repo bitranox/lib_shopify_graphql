@@ -3,8 +3,8 @@ revision = 5
 requires-python = ">=3.10"
 resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten') or (python_full_version >= '3.15' and sys_platform == 'emscripten')",
+    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
     "python_full_version < '3.11'",
 ]
@@ -14,7 +14,6 @@ exclude-newer = "0001-01-01T00:00:00Z" # This has no effect and is included for 
 exclude-newer-span = "P7D"
 
 [options.exclude-newer-package]
-certifi = "2026-10-23T11:36:17Z"
 hatchling = "2026-10-28T02:27:31Z"
 lib-cli-exit-tools = false
 lib-layered-config = false
@@ -85,7 +84,7 @@ version = "1.6.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "colorama", marker = "os_name == 'nt'" },
-    { name = "importlib-metadata", marker = "python_full_version < '3.10.2'" },
+    { name = "importlib-metadata", version = "9.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.10.2'" },
     { name = "packaging" },
     { name = "pyproject-hooks" },
     { name = "tomli", marker = "python_full_version < '3.11'" },
@@ -502,8 +501,8 @@ version = "7.17.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten') or (python_full_version >= '3.15' and sys_platform == 'emscripten')",
+    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d2/79/e78bd8f75a9b8e32233ce92d4607f0a21ce88a9156cace2884e7175a82f5/coverage-7.17.0.tar.gz", hash = "sha256:cc010a0a7fbdd9bb8bdfd0d3f04a5151275860213cbd7e2b876b29778489c712", size = 991021, upload-time = "2026-10-22T16:06:50.009Z" }
@@ -753,8 +752,8 @@ version = "4.2.4"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten') or (python_full_version >= '3.15' and sys_platform == 'emscripten')",
+    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/d8/28/3893324bcadf8f89b1616637468d766af3f625008c0735bf704fdfa86617/filelock-4.2.4.tar.gz", hash = "sha256:c6d8663535e1650ee430507b4ffbac7b464dd64b7647ea0112a9f406499d163d", size = 652444, upload-time = "2026-10-19T01:57:51.001Z" }
@@ -965,8 +964,8 @@ version = "2.16.0"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten') or (python_full_version >= '3.15' and sys_platform == 'emscripten')",
+    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
 ]
 dependencies = [
@@ -1032,12 +1031,30 @@ wheels = [
 name = "importlib-metadata"
 version = "9.0.1"
 source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "python_full_version < '3.11'",
+]
 dependencies = [
     { name = "zipp" },
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/6f/7e/1e7e8dc30634b93ebb3d58a3dea569ad146e656218d3960ab04f62047b29/importlib_metadata-9.0.1.tar.gz", hash = "sha256:ab830580bc0ef3db61ce8fae716389e5462b67e033018bab6d8f80ef17172f99", size = 59124, upload-time = "2026-08-28T15:30:34.646Z" }
 wheels = [
     { url = "https://files.pythonhosted.org/packages/b3/55/ecca97ae19075f1fac62def77731e7f535e6c1fb8f92ff08160c5e6dade8/importlib_metadata-9.0.1-py3-none-any.whl", hash = "sha256:bba5600596a7e21f3eef53281cf28d6a5195634d2f2b78ff9501a3272c6eaab0", size = 27920, upload-time = "2026-08-28T15:30:33.433Z" },
+]
+
+[[package]]
+name = "importlib-metadata"
+version = "10.1.0"
+source = { registry = "https://pypi.org/simple" }
+resolution-markers = [
+    "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
+]
+dependencies = [
+    { name = "zipp" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/98/f6/4eda8458eb00ec03e715c376c6b23b3def69687924c68d36d1c4003d3bc4/importlib_metadata-10.1.0.tar.gz", hash = "sha256:82b04047fa09792c1a8cfeddfe08bec79e4b13c29c8469b0d3949860f61017e8", size = 67761, upload-time = "2026-10-24T00:01:44.856Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/65/b6/495438ad95e0102aff8f6786b5474202f38cd5d4700d03a72b77977dec10/importlib_metadata-10.1.0-py3-none-any.whl", hash = "sha256:cf45ce66a929c64e994185a809c04840d0501db17e663810d993d0f4829265c7", size = 32221, upload-time = "2026-10-24T00:01:43.507Z" },
 ]
 
 [[package]]
@@ -1101,7 +1118,8 @@ name = "keyring"
 version = "25.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
-    { name = "importlib-metadata", marker = "python_full_version < '3.12'" },
+    { name = "importlib-metadata", version = "9.0.1", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version < '3.11'" },
+    { name = "importlib-metadata", version = "10.1.0", source = { registry = "https://pypi.org/simple" }, marker = "python_full_version == '3.11.*'" },
     { name = "jaraco-classes" },
     { name = "jaraco-context" },
     { name = "jaraco-functools" },
@@ -1128,7 +1146,7 @@ wheels = [
 
 [[package]]
 name = "lib-layered-config"
-version = "7.5.0"
+version = "7.7.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "lib-cli-exit-tools" },
@@ -1137,9 +1155,9 @@ dependencies = [
     { name = "rtoml", marker = "python_full_version < '3.14'" },
     { name = "tomli", marker = "python_full_version == '3.14.*'" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/6f/3d/51848087230e346be8dd80fd908e1bb74c943d2fe6009b6e07ebea775931/lib_layered_config-7.5.0.tar.gz", hash = "sha256:86e95abda239ef3a33085a7e03f60b56120a8a99f723c4c5e73948942e5c22ba", size = 542191, upload-time = "2026-10-29T22:44:36.531Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/c4/58/b4299ad29b6c1f732c8974713705f0a1445b3387a7bf8b4e95bf1b603880/lib_layered_config-7.7.0.tar.gz", hash = "sha256:f82c19972a5718c2f449a5690fc091828821402af8dee4012fe54a17f238c054", size = 550689, upload-time = "2026-11-01T17:30:33.306Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/82/e5/698cffb3bd8106d06617e5dd6b520388f550369ec2120e67d8bc7667ef6c/lib_layered_config-7.5.0-py3-none-any.whl", hash = "sha256:f49e106f3903d74b5f6d826a99e9f639debece8a9b290103a6b52736cfa4ce17", size = 164624, upload-time = "2026-10-29T22:44:35.151Z" },
+    { url = "https://files.pythonhosted.org/packages/55/e0/1606a185b9800128c477b17f2eeb9dcc6f18f3cdbf07f47b6e563864c95e/lib_layered_config-7.7.0-py3-none-any.whl", hash = "sha256:087ff927bd24138228bfa3d601daefaca226946adc1148f5999a3d6e4ad15b80", size = 167755, upload-time = "2026-11-01T17:30:31.326Z" },
 ]
 
 [[package]]
@@ -1209,7 +1227,7 @@ requires-dist = [
     { name = "httpx2", specifier = ">=2.14.0" },
     { name = "import-linter", marker = "extra == 'dev'", specifier = ">=2.15" },
     { name = "lib-cli-exit-tools", specifier = ">=2.4.1" },
-    { name = "lib-layered-config", specifier = ">=7.5.0" },
+    { name = "lib-layered-config", specifier = ">=7.7.0" },
     { name = "lib-log-rich", specifier = ">=8.1.2" },
     { name = "orjson", specifier = ">=3.13.0" },
     { name = "pip-audit", marker = "extra == 'dev'", specifier = ">=2.10.1" },
@@ -1304,8 +1322,8 @@ version = "11.2.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten') or (python_full_version >= '3.15' and sys_platform == 'emscripten')",
+    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/52/b8/c63995bebbb9ac9c059350e0fb8c82c2420c85aeca7d34e40aecf3df9281/more_itertools-11.2.1.tar.gz", hash = "sha256:cbf08fd0af284dc69718b9b76a8e6203df624d70209ea511e4219d350c856f63", size = 154133, upload-time = "2026-10-14T18:50:30.407Z" }
@@ -1637,8 +1655,8 @@ version = "4.13.5"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten') or (python_full_version >= '3.15' and sys_platform == 'emscripten')",
+    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/58/e6/d0abbb256b44e6a05748c6942511ff67db8dbb068de0c35b24bf1b395b09/platformdirs-4.13.5.tar.gz", hash = "sha256:05831adf87d392760f4b5c3a0a95579ab5a10b18b9b9bd43680dcb47544788a0", size = 62362, upload-time = "2026-10-19T01:02:11.778Z" }
@@ -2264,8 +2282,8 @@ version = "5.9.1"
 source = { registry = "https://pypi.org/simple" }
 resolution-markers = [
     "python_full_version == '3.14.*' and sys_platform == 'emscripten'",
-    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.12' and python_full_version < '3.14' and sys_platform == 'emscripten') or (python_full_version >= '3.15' and sys_platform == 'emscripten')",
+    "python_full_version == '3.14.*' and sys_platform != 'emscripten'",
     "(python_full_version >= '3.11' and python_full_version < '3.14' and sys_platform != 'emscripten') or (python_full_version >= '3.15' and sys_platform != 'emscripten') or (python_full_version == '3.11.*' and sys_platform == 'emscripten')",
 ]
 sdist = { url = "https://files.pythonhosted.org/packages/db/a1/3b8ed9c1fc3aa6eebb57732d924ddaa0500ecc3b638d0454816320994383/stevedore-5.9.1.tar.gz", hash = "sha256:e97a2667923efda926e8713fde6a73616df68210a3cbc6f02b48967b676fd8bf", size = 518111, upload-time = "2026-08-20T15:25:14.754Z" }
