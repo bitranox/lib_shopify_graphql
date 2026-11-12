@@ -6,6 +6,8 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ## [Unreleased]
 
+## [2.1.3] - 2026-11-12
+
 ### Fixed
 
 - A failure while shutting down logging no longer replaces the command's result: `main()` used to
