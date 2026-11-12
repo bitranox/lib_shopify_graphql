@@ -8,6 +8,10 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
 
 ### Fixed
 
+- A failure while shutting down logging no longer replaces the command's result: `main()` used to
+  end in a `RuntimeError` traceback ("Queue worker failed to stop within the allotted timeout") when a
+  log sink such as an unreachable Graylog stalled lib_log_rich's queue, losing the exit code of a
+  finished command. It now prints one warning on stderr and keeps the exit code.
 - `notebooks/Quickstart.ipynb` installs the checkout it runs in, so CI's "Execute notebooks" job
   tests the commit under test. It used to install `git+https://github.com/...` every time, which is
   the pushed default branch, so a pull request's notebook run tested the code already there.
@@ -35,6 +39,11 @@ the [Keep a Changelog](https://keepachangelog.com/) format.
   `storage.googleapis.com` or a subdomain of it, or when a query parameter name starts with `X-Goog-`.
   A URL that only mentions the GCS host or an `X-Goog-` name elsewhere (for example
   `storage.googleapis.com.example.net`, or in the path or a query value) now gets the POST.
+
+### Changed
+
+- Requires `lib_log_rich>=8.2.0`, which backs off from an unreachable Graylog instead of stalling
+  the log queue.
 
 ## [2.1.2] - 2026-10-15
 

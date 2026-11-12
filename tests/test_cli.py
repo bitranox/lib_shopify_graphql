@@ -14,6 +14,7 @@ import json
 from typing import TYPE_CHECKING, Any
 
 import lib_cli_exit_tools
+import lib_log_rich.runtime
 import pytest
 
 from conftest import FakeSession, MockConfig
@@ -545,6 +546,28 @@ class TestMainEntryPoint:
         captured = capsys.readouterr()
         if captured.out.strip():
             assert "[" in captured.out
+
+    def test_a_failing_logging_shutdown_keeps_the_command_exit_code(
+        self,
+        isolated_traceback_config: None,
+        monkeypatch: pytest.MonkeyPatch,
+        capsys: pytest.CaptureFixture[str],
+    ) -> None:
+        """A slow log sink makes lib_log_rich's shutdown() raise; main() must still return the command's code."""
+        real_shutdown = lib_log_rich.runtime.shutdown
+
+        def shutdown_then_fail() -> None:
+            real_shutdown()
+            raise RuntimeError("Queue worker failed to stop within the allotted timeout")
+
+        monkeypatch.setattr(lib_log_rich.runtime, "shutdown", shutdown_then_fail)
+
+        exit_code = cli_mod.main(["info"])
+
+        err = capsys.readouterr().err
+        assert exit_code == 0, err
+        assert "Warning: logging did not shut down cleanly, some log events may be lost: Queue worker failed" in err
+        assert "Traceback" not in err
 
 
 # =============================================================================
